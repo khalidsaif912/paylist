@@ -1,0 +1,3679 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1f3a">
+<title>نظام إدارة الراتب</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&family=Noto+Kufi+Arabic:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg: #0f1729;
+  --surface: #1a2340;
+  --surface2: #212d4a;
+  --surface3: #2a3a5c;
+  --border: rgba(255,255,255,0.08);
+  --primary: #4f8ef7;
+  --primary-dark: #2d6ff0;
+  --accent: #00e5c3;
+  --accent2: #ff6b6b;
+  --gold: #ffd166;
+  --text: #e8edf7;
+  --text-muted: #7a8ab0;
+  --success: #00c896;
+  --danger: #ff4d6d;
+  --warning: #ffd166;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --card-radius: 12px;
+  --card-bg: rgba(26, 35, 64, var(--card-glass-alpha));
+  --card-border: 1px solid rgba(255, 255, 255, 0.1);
+  --card-shadow: 0 4px 14px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow: var(--card-shadow);
+  --glow: 0 0 20px rgba(79,142,247,0.25);
+  --card-glass-alpha: 1;
+  --btn-surface: #283552;
+  --btn-surface-hover: #324066;
+  --btn-border: rgba(255, 255, 255, 0.12);
+  --btn-label: #9aadc8;
+  --btn-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+body[data-glass="1"] { --card-glass-alpha: 0.88; }
+body[data-glass="2"] { --card-glass-alpha: 0.76; }
+body[data-glass="3"] { --card-glass-alpha: 0.64; }
+body[data-glass="4"] { --card-glass-alpha: 0.52; }
+
+body[data-glass]:not([data-glass="0"]) .salary-card,
+body[data-glass]:not([data-glass="0"]) .table-card,
+body[data-glass]:not([data-glass="0"]) .panel-inner {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ===== UNIFIED CARD STYLE ===== */
+.salary-card,
+.table-card,
+.panel-inner,
+.modal,
+.month-current-card {
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--app-font, 'Tajawal', sans-serif);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* BG PATTERN */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -20%, rgba(79,142,247,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(0,229,195,0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body[data-tex-bg="on"] {
+  background-color: var(--tt-bg, var(--bg));
+  background-image: var(--tt-pattern);
+  background-attachment: fixed;
+}
+
+body[data-tex-bg="on"]::before {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04)),
+    radial-gradient(ellipse 80% 50% at 20% -20%, rgba(79, 142, 247, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(0, 229, 195, 0.06) 0%, transparent 60%);
+}
+
+[data-theme="light"] body[data-tex-bg="on"]::before {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.35)),
+    radial-gradient(ellipse 80% 50% at 15% -15%, rgba(79, 142, 247, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 90% 105%, rgba(0, 200, 150, 0.08) 0%, transparent 55%);
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+/* ===== HEADER ===== */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(26,35,64,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: env(safe-area-inset-top, 0) 0 0;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  gap: 12px;
+}
+
+.header-title {
+  font-size: clamp(0.78rem, 3.5vw, 1.1rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-auth {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Tajawal', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(79,142,247,0.3);
+}
+
+.btn-auth:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,142,247,0.4); }
+.btn-auth.logout { background: linear-gradient(135deg, #ff4d6d, #c9184a); box-shadow: 0 4px 15px rgba(255,77,109,0.3); }
+
+/* ===== THEMES ===== */
+[data-theme="light"] {
+  --bg: #eef2f9;
+  --surface: #ffffff;
+  --surface2: #f4f7fc;
+  --surface3: #e8edf5;
+  --border: rgba(15, 35, 70, 0.1);
+  --text: #1a2744;
+  --text-muted: #5a6b8a;
+  --gold: #c88a00;
+  --card-bg: rgba(255, 255, 255, var(--card-glass-alpha));
+  --card-border: 1px solid rgba(79, 142, 247, 0.14);
+  --card-shadow: 0 4px 16px rgba(40, 70, 130, 0.1), 0 1px 2px rgba(40, 70, 130, 0.06);
+  --shadow: var(--card-shadow);
+  --glow: 0 0 20px rgba(79, 142, 247, 0.15);
+  --btn-surface: #ffffff;
+  --btn-surface-hover: #f0f5ff;
+  --btn-border: rgba(79, 142, 247, 0.14);
+  --btn-label: #4a5d7a;
+  --btn-shadow: 0 2px 10px rgba(40, 70, 130, 0.12);
+}
+
+[data-theme="light"] .salary-card,
+[data-theme="light"] .table-card,
+[data-theme="light"] .panel-inner,
+[data-theme="light"] .modal {
+  box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .app-header {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+[data-theme="light"] .header-title {
+  background: linear-gradient(135deg, #1a2744 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 15% -15%, rgba(79, 142, 247, 0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 90% 105%, rgba(0, 200, 150, 0.1) 0%, transparent 55%);
+}
+
+/* —— الوضع النهاري: بطاقة الراتب —— */
+[data-theme="light"] .salary-card-top {
+  border-bottom-color: rgba(79, 142, 247, 0.12);
+}
+
+[data-theme="light"] .salary-hero-label {
+  color: rgba(26, 39, 68, 0.55);
+}
+
+[data-theme="light"] .salary-hero-currency {
+  color: rgba(26, 39, 68, 0.42);
+}
+
+[data-theme="light"] .salary-value {
+  background: linear-gradient(135deg, #9a6b00, #d4a017);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: none;
+}
+
+[data-theme="light"] .hero-stat-spent {
+  background: linear-gradient(145deg, rgba(255, 77, 109, 0.14) 0%, rgba(255, 77, 109, 0.05) 100%);
+  border-color: rgba(255, 77, 109, 0.22);
+}
+
+[data-theme="light"] .hero-stat-remaining {
+  background: linear-gradient(145deg, rgba(0, 168, 120, 0.14) 0%, rgba(0, 168, 120, 0.05) 100%);
+  border-color: rgba(0, 168, 120, 0.22);
+}
+
+[data-theme="light"] .btn-edit-salary {
+  color: #9a6b00;
+}
+
+[data-theme="light"] .salary-month-btn {
+  color: var(--primary-dark);
+}
+
+[data-theme="light"] .hero-stat-spent,
+[data-theme="light"] .hero-stat-remaining {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+[data-theme="light"] #money-canvas {
+  opacity: 0.45;
+}
+
+[data-theme="light"] .salary-card.add-focus-compact #money-canvas {
+  opacity: 0.25;
+}
+
+/* ===== APPEARANCE DOCK (top-left) ===== */
+.appearance-dock {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 10px;
+  z-index: 65;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100vw - 20px);
+}
+
+.appearance-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 210px;
+}
+
+/* ===== WRAPPER ===== */
+.app-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 10px 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-wrap > .salary-card,
+.app-wrap > .actions-zone,
+.app-wrap > .table-card {
+  margin: 0;
+}
+
+/* ===== SALARY CARD ===== */
+.salary-card {
+  overflow: hidden;
+}
+
+.salary-card-top {
+  padding: 12px 12px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  transition: padding 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.35s ease;
+}
+
+.salary-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.salary-value {
+  font-size: clamp(1.25rem, 5.5vw, 1.75rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--gold), #ffaa00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(255,209,102,0.25);
+}
+
+.salary-icon-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: var(--btn-surface);
+  border: 1px solid var(--btn-border);
+  box-shadow: var(--btn-shadow);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Tajawal', sans-serif;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.salary-card-tools {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  overflow: hidden;
+  max-height: 48px;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.4s ease,
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: max-height, opacity, transform;
+}
+
+.salary-card.add-focus-compact .salary-card-tools {
+  max-height: 0;
+  height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+}
+
+.btn-edit-salary {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  font-size: 0.85rem;
+  color: #e8a000;
+}
+.btn-edit-salary:hover { filter: brightness(1.05); }
+
+.salary-hero {
+  width: 100%;
+  padding: 8px 10px 10px;
+  overflow: hidden;
+  max-height: 168px;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: center top;
+  transition:
+    max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.4s ease,
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: max-height, opacity, transform;
+}
+
+.salary-card.add-focus-compact .salary-hero {
+  max-height: 96px;
+  opacity: 1;
+  transform: none;
+  padding: 8px 12px 10px;
+  pointer-events: auto;
+}
+
+.salary-card.add-focus-compact .salary-card-top {
+  padding: 8px 12px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.salary-card.add-focus-compact .salary-hero-grid {
+  background: rgba(8, 14, 32, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 10px 12px;
+  gap: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.salary-card.add-focus-compact .salary-hero-center .salary-hero-label,
+.salary-card.add-focus-compact .salary-hero-currency {
+  display: none;
+}
+
+.salary-card.add-focus-compact .salary-hero-center::before {
+  content: '💰 الراتب';
+  display: block;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+  letter-spacing: 0.5px;
+}
+
+.salary-card.add-focus-compact .salary-value {
+  font-size: clamp(1.15rem, 5vw, 1.45rem);
+  line-height: 1.1;
+}
+
+.salary-card.add-focus-compact .hero-stat {
+  max-width: 72px;
+  padding: 7px 8px;
+}
+
+.salary-card.add-focus-compact .hero-stat-label {
+  font-size: 0.48rem;
+  margin-bottom: 2px;
+}
+
+.salary-card.add-focus-compact .hero-stat-value {
+  font-size: clamp(0.8rem, 3.5vw, 0.92rem);
+}
+
+.salary-card.add-focus-compact #money-canvas {
+  opacity: 0.35;
+  transition: opacity 0.5s ease;
+}
+
+#money-canvas {
+  transition: opacity 0.5s ease;
+}
+.salary-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, auto) 1fr minmax(0, auto);
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.salary-hero-center {
+  text-align: center;
+  min-width: 0;
+}
+
+.hero-stat {
+  text-align: center;
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 0;
+  max-width: 68px;
+  width: 100%;
+  justify-self: center;
+}
+
+.hero-stat-spent {
+  background: linear-gradient(145deg, rgba(255,77,109,0.1) 0%, rgba(255,77,109,0.03) 100%);
+  border: 1px solid rgba(255,77,109,0.18);
+}
+
+.hero-stat-remaining {
+  background: linear-gradient(145deg, rgba(0,200,150,0.1) 0%, rgba(0,200,150,0.03) 100%);
+  border: 1px solid rgba(0,200,150,0.18);
+}
+
+.hero-stat-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.hero-stat-value {
+  font-size: clamp(0.78rem, 3.2vw, 0.95rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.hero-stat-value.red { color: var(--danger); }
+.hero-stat-value.green { color: var(--success); }
+
+.salary-hero-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+.salary-hero-currency {
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.28);
+  margin-top: 3px;
+  letter-spacing: 1.2px;
+}
+
+.salary-month {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.salary-month-bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  z-index: 2;
+  max-width: calc(100% - 50px);
+}
+
+.salary-month-btn {
+  flex: 1;
+  min-width: 0;
+  background: var(--btn-surface);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  font-size: 0.65rem;
+  box-shadow: var(--btn-shadow);
+  font-weight: 700;
+  color: var(--primary);
+  font-family: 'Tajawal', sans-serif;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.salary-month-btn:hover {
+  background: var(--btn-surface-hover);
+  border-color: rgba(79, 142, 247, 0.35);
+}
+
+.btn-add-month-main {
+  border: 1px solid var(--btn-border);
+  background: var(--btn-surface);
+  color: var(--success);
+  font-size: 1.15rem;
+  font-weight: 300;
+  box-shadow: var(--btn-shadow);
+}
+.btn-add-month-main:hover {
+  background: var(--btn-surface-hover);
+  transform: scale(1.05);
+}
+.deposit-hint {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1.2;
+}
+
+/* month modal */
+.month-current-card {
+  padding: 10px 12px;
+  text-align: right;
+  margin-bottom: 8px;
+  border-color: rgba(79, 142, 247, 0.35);
+}
+
+.month-current-card .mc-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.month-current-card .mc-meta {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.month-current-card .mc-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: rgba(79,142,247,0.15);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.month-other-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 88px;
+  overflow-y: auto;
+  margin-bottom: 0;
+}
+
+.month-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: right;
+  width: 100%;
+  font-family: 'Tajawal', sans-serif;
+  color: var(--text);
+}
+.month-list-item:hover { border-color: rgba(79,142,247,0.35); background: rgba(79,142,247,0.08); }
+.month-list-item .ml-title { font-size: 0.82rem; font-weight: 700; }
+.month-list-item .ml-meta { font-size: 0.62rem; color: var(--text-muted); margin-top: 2px; }
+
+.month-add-form {
+  display: none;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  animation: panelIn 0.2s ease;
+}
+.month-add-form.open { display: block; }
+
+.month-add-form .form-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+#month-overlay .modal-body {
+  gap: 8px;
+}
+
+#month-overlay .field input,
+#month-overlay .field select,
+#month-overlay .optional-toggle {
+  max-width: 100%;
+  min-width: 0;
+}
+
+#month-overlay .optional-toggle span {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+#month-overlay .modal-footer-actions .btn-modal-action {
+  font-size: 0.78rem;
+}
+
+#month-overlay .month-current-card {
+  padding: 10px 12px;
+  margin-bottom: 0;
+}
+
+#month-overlay .month-current-card .mc-title {
+  font-size: 0.84rem;
+}
+
+#month-overlay .month-add-form .form-title {
+  font-size: 0.72rem;
+  margin-bottom: 8px;
+}
+
+#month-overlay .field label {
+  font-size: 0.72rem;
+  margin-bottom: 4px;
+}
+
+#month-overlay .field input,
+#month-overlay .field select {
+  padding: 9px 11px;
+  font-size: 0.84rem;
+}
+
+#month-overlay .optional-toggle {
+  font-size: 0.72rem;
+  padding: 7px 9px;
+}
+
+.modal-footer.modal-footer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+.modal-footer .btn,
+.modal-footer-actions .btn-modal-action {
+  flex: none !important;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  min-height: 36px;
+  font-size: 0.76rem;
+  border-radius: var(--radius-sm);
+  margin: 0;
+  padding: 8px 6px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.optional-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0,229,195,0.06);
+  border: 1px solid rgba(0,229,195,0.15);
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.optional-toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.deposit-field-wrap { margin-top: 8px; display: none; }
+.deposit-field-wrap.show { display: block; }
+
+/* ===== INPUT CARD ===== */
+.input-card {
+  background: var(--surface);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.input-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.input-card-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.input-card-title i { color: var(--primary); }
+
+.btn-new {
+  background: linear-gradient(135deg, var(--accent), #00b89f);
+  color: #0a1a15;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: 'Tajawal', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+.btn-new:hover { transform: translateY(-1px); filter: brightness(1.1); }
+
+.input-card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+/* FORM ELEMENTS */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+.form-row.full { grid-template-columns: 1fr; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.field label i { color: var(--primary); font-size: 0.65rem; }
+
+.field input, .field select {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.87rem;
+  font-family: 'Tajawal', sans-serif;
+  outline: none;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.field input:focus, .field select:focus {
+  border-color: var(--primary);
+  background: rgba(79,142,247,0.07);
+  box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
+}
+
+.field input::placeholder { color: var(--text-muted); font-size: 0.82rem; }
+
+.field select option { background: #1a2340; color: var(--text); }
+
+/* ===== ACTION BUTTONS ===== */
+.actions-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  flex: 1;
+  min-width: 72px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Tajawal', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; box-shadow: 0 4px 15px rgba(79,142,247,0.3); }
+.btn-success { background: linear-gradient(135deg, var(--success), #009e76); color: white; box-shadow: 0 4px 15px rgba(0,200,150,0.3); }
+.btn-danger { background: linear-gradient(135deg, var(--danger), #c9184a); color: white; box-shadow: 0 4px 15px rgba(255,77,109,0.3); }
+.btn-warning { background: linear-gradient(135deg, var(--warning), #e8a000); color: #1a1a1a; box-shadow: 0 4px 15px rgba(255,209,102,0.3); }
+.btn-ghost { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); background: var(--surface3); }
+
+/* ===== SEARCH CARD ===== */
+.search-card {
+  background: var(--surface);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search-row { display: flex; gap: 8px; align-items: flex-end; }
+
+.date-group { display: flex; gap: 8px; flex: 1; }
+
+/* ===== EXPENSE LIST ===== */
+.table-card {
+  overflow: hidden;
+}
+
+.list-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.list-section-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-section-title i { color: var(--primary); }
+
+.list-section-count {
+  min-width: 26px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(79,142,247,0.15);
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expense-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: min(55dvh, 450px);
+}
+
+/* each row — صف واحد */
+.expense-item {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  animation: rowIn 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.expense-item:last-child { border-bottom: none; }
+
+.expense-accent {
+  width: 4px;
+  flex-shrink: 0;
+}
+
+.expense-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 9px 10px 9px 8px;
+  gap: 8px;
+  min-width: 0;
+  transition: background 0.2s ease;
+}
+
+.expense-zebra-a .expense-inner {
+  background: rgba(255, 255, 255, 0.025);
+}
+.expense-zebra-b .expense-inner {
+  background: rgba(79, 142, 247, 0.07);
+}
+.expense-item:hover .expense-inner {
+  background: rgba(79, 142, 247, 0.14) !important;
+}
+
+.expense-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.expense-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+  max-width: 38%;
+}
+
+.expense-sub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.expense-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.expense-amount {
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: var(--gold);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.expense-amount span {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: rgba(255,209,102,0.5);
+  margin-right: 2px;
+}
+
+.expense-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.expense-date {
+  font-size: 0.52rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.btn-icon {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  transition: all 0.18s;
+  background: transparent;
+}
+.btn-icon:hover { transform: scale(1.14); }
+.btn-icon.edit  { color: var(--primary); background: rgba(79,142,247,0.13); }
+.btn-icon.delete{ color: var(--danger);  background: rgba(255,77,109,0.13); }
+
+@keyframes rowIn { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: none; } }
+
+/* TYPE BADGE */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 0.52rem;
+  font-weight: 800;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.repeat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 0.52rem;
+  font-weight: 800;
+  line-height: 1.5;
+  background: rgba(0,229,195,0.08);
+  color: var(--accent);
+  border: 1px solid rgba(0,229,195,0.2);
+}
+
+/* EMPTY STATE */
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.empty-state i { font-size: 2.5rem; opacity: 0.2; margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 0.85rem; }
+
+/* ===== INSTALL BTN ===== */
+.install-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding: 12px 14px env(safe-area-inset-bottom, 12px);
+  background: rgba(15,23,41,0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: none;
+}
+
+.btn-install {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: 'Tajawal', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 8px 30px rgba(79,142,247,0.4);
+  transition: all 0.2s;
+}
+.btn-install:hover { transform: translateY(-1px); box-shadow: 0 12px 40px rgba(79,142,247,0.5); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,10,25,0.85);
+  backdrop-filter: blur(12px);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 16px max(12px, env(safe-area-inset-bottom, 0px));
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  width: min(360px, calc(100vw - 32px));
+  max-width: min(360px, calc(100vw - 32px));
+  max-height: min(90dvh, 560px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: auto;
+  animation: modalIn 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-handle { display: none; }
+
+.modal-header {
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.modal-title i { color: var(--primary); }
+
+.btn-modal-close {
+  background: var(--btn-surface);
+  border: 1px solid var(--btn-border);
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--btn-shadow);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: 0.2s;
+}
+.btn-modal-close:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+.modal-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.modal-footer {
+  padding: 10px 12px 14px;
+  padding-bottom: max(14px, calc(10px + env(safe-area-inset-bottom, 0px)));
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* ALERT */
+.alert-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.alert-box i { color: var(--warning); }
+.alert-box.error { border-color: rgba(255,77,109,0.3); color: var(--danger); background: rgba(255,77,109,0.07); }
+.alert-box.success { border-color: rgba(0,200,150,0.3); color: var(--success); background: rgba(0,200,150,0.07); }
+
+/* TYPE COLORS */
+.type-فواتير,
+.type-الفواتير { background: rgba(255,77,109,0.14); color: #ff8fa3; border-color: rgba(255,77,109,0.22); }
+.type-القروض { background: rgba(255,77,109,0.18); color: #ff6b8a; border-color: rgba(255,77,109,0.25); }
+.type-الديون { background: rgba(255,150,50,0.14); color: #ffb366; border-color: rgba(255,150,50,0.22); }
+.type-الايجارات { background: rgba(255,200,50,0.14); color: #ffd166; border-color: rgba(255,200,50,0.22); }
+.type-الاساسيات { background: rgba(79,142,247,0.14); color: #7eb0ff; border-color: rgba(79,142,247,0.22); }
+.type-الكماليات { background: rgba(150,100,255,0.14); color: #c4a0ff; border-color: rgba(150,100,255,0.22); }
+.type-الصيانة { background: rgba(0,200,150,0.14); color: #3ddfa8; border-color: rgba(0,200,150,0.22); }
+.type-الصدقات { background: rgba(0,229,195,0.12); color: #5ef0d6; border-color: rgba(0,229,195,0.22); }
+.type-المدخرات { background: rgba(100,200,100,0.14); color: #7ee081; border-color: rgba(100,200,100,0.22); }
+.type-اخرى { background: rgba(255,255,255,0.06); color: var(--text-muted); border-color: var(--border); }
+.type-إيداع { background: rgba(0,200,150,0.14); color: #5ef0d6; border-color: rgba(0,200,150,0.28); }
+
+.expense-amount--deposit {
+  color: var(--success) !important;
+}
+.expense-item--deposit .expense-inner {
+  background: rgba(0, 200, 150, 0.06) !important;
+}
+
+
+/* ===== RESPONSIVE ===== */
+button, .square-btn, .btn, .btn-icon, .salary-month-btn, .btn-add-month-main {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@media (max-width: 520px) {
+  .app-wrap {
+    padding: 10px 10px calc(16px + env(safe-area-inset-bottom, 0px));
+    gap: 10px;
+  }
+
+  .header-inner {
+    padding: 10px 12px;
+  }
+  #header-spacer-left,
+  #header-spacer {
+    display: none;
+  }
+  .header-title {
+    font-size: 0.9rem;
+  }
+
+  .appearance-dock {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    left: 8px;
+  }
+  .square-btn--dock {
+    width: 42px;
+    min-height: 42px;
+  }
+  .square-btn {
+    min-height: 48px;
+    padding: 6px 4px 5px;
+  }
+  .square-btn-icon { font-size: 1.15rem; }
+  .square-btn.add-btn .square-btn-icon { font-size: 1.35rem; }
+
+  .salary-card {
+    border-radius: 16px;
+  }
+  .salary-card-top {
+    padding: 12px 12px 10px;
+  }
+  .salary-month-bar {
+    top: 10px;
+    right: 10px;
+    max-width: 62%;
+    gap: 5px;
+  }
+  .salary-month-btn {
+    font-size: 0.65rem;
+    padding: 5px 8px;
+  }
+  .salary-icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .btn-add-month-main {
+    font-size: 1.2rem;
+  }
+  .salary-card-tools {
+    height: 38px;
+    max-height: 48px;
+  }
+  .salary-hero {
+    padding-top: 8px;
+  }
+
+  .salary-hero-grid {
+    gap: 5px;
+  }
+  .hero-stat {
+    padding: 5px 6px;
+    border-radius: 8px;
+    max-width: 58px;
+  }
+  .hero-stat-value {
+    font-size: 0.82rem;
+  }
+  .hero-stat-label {
+    font-size: 0.46rem;
+  }
+
+  .square-btn {
+    min-height: 46px;
+    padding: 6px 4px 5px;
+  }
+
+  .panel-inner {
+    padding: 10px 12px;
+  }
+  .form-row,
+  .form-row.triple {
+    grid-template-columns: 1fr;
+  }
+
+  .list-section-head {
+    padding: 12px 12px 10px;
+  }
+
+  .expense-list {
+    max-height: none;
+  }
+
+  .expense-title {
+    max-width: 32%;
+    font-size: 0.78rem;
+  }
+
+  .expense-amount {
+    font-size: 0.88rem;
+  }
+
+  .btn-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 0.68rem;
+  }
+
+  .type-badge,
+  .repeat-badge,
+  .expense-date {
+    font-size: 0.48rem;
+  }
+
+  .modal-body {
+    padding: 14px 14px;
+    gap: 12px;
+  }
+  .modal-header {
+    padding: 14px 14px;
+  }
+  .modal {
+    width: min(340px, calc(100vw - 20px));
+    max-width: min(340px, calc(100vw - 20px));
+  }
+
+  .modal-footer,
+  .modal-footer-actions {
+    padding: 12px 14px 18px;
+    padding-bottom: max(18px, calc(12px + env(safe-area-inset-bottom, 0px)));
+  }
+
+  #month-overlay .month-other-list {
+    max-height: 72px;
+  }
+}
+
+@media (max-width: 420px) {
+  .toolbar-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .square-btn-label {
+    font-size: 0.48rem;
+  }
+  .modal-footer-actions {
+    grid-template-columns: 1fr;
+  }
+  .modal-footer-actions .btn-modal-action {
+    width: 100%;
+  }
+  .salary-month-btn span:first-child {
+    font-size: 0.6rem;
+  }
+  .deposit-hint {
+    font-size: 0.52rem;
+  }
+
+  .modal {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+  }
+}
+
+/* LOADING */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: var(--text-muted);
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* TOAST */
+.toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  z-index: 9999;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: all 0.3s;
+  max-width: calc(100vw - 40px);
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 520px) {
+  .toast {
+    top: auto;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: 10px;
+    right: 10px;
+    transform: translateY(8px);
+    max-width: none;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+  }
+  .toast.show {
+    transform: translateY(0);
+  }
+}
+
+.toast.success { border-color: rgba(0,200,150,0.4); }
+.toast.success i { color: var(--success); }
+.toast.error { border-color: rgba(255,77,109,0.4); }
+.toast.error i { color: var(--danger); }
+
+/* SECTION TITLE */
+.section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* SAVING OVERLAY */
+.saving-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,10,25,0.7);
+  backdrop-filter: blur(6px);
+  z-index: 999;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+}
+.saving-overlay.show { display: flex; }
+.saving-overlay p { font-size: 0.9rem; color: var(--text-muted); }
+
+/* CONFIRM MODAL */
+
+/* enhanced salary card */
+.salary-card {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== ACTIONS ZONE (toolbar + panels) ===== */
+.actions-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ===== SQUARE TOOL BUTTONS ===== */
+.square-btn {
+  background: var(--btn-surface);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 4px 5px;
+  min-height: 50px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: inherit;
+  box-shadow: var(--btn-shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, outline 0.15s ease, background 0.18s ease;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.square-btn:hover {
+  transform: translateY(-1px);
+  background: var(--btn-surface-hover);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.square-btn.active,
+.square-btn.is-open {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.square-btn-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.square-btn-label {
+  font-size: 0.46rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--btn-label);
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.square-btn--dock {
+  width: 44px;
+  min-height: 44px;
+  padding: 5px 3px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.square-btn--dock .square-btn-icon { font-size: 1.05rem; }
+.square-btn--dock .square-btn-label { font-size: 0.42rem; }
+
+#btn-fx-toggle .square-btn-icon { color: #e8a000; }
+#btn-fx-toggle.off .square-btn-icon { color: #9aa8c4; }
+#btn-fx-toggle.off::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 18px;
+  background: var(--danger);
+  border-radius: 2px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  pointer-events: none;
+}
+
+#btn-theme-toggle .square-btn-icon { color: #e8a000; }
+#btn-font-cycle .square-btn-icon { color: var(--primary); font-weight: 800; font-size: 0.95rem; }
+#btn-bg-pattern .square-btn-icon { color: #00c896; }
+#btn-bg-pattern.active { outline-color: var(--accent); }
+
+.square-btn.add-btn .square-btn-icon { color: #ff5c7a; font-size: 1.45rem; font-weight: 300; }
+.square-btn.add-btn.is-open .square-btn-icon { font-weight: 400; }
+.square-btn.deposit-btn .square-btn-icon { color: #e8a000; font-size: 1.15rem; }
+.square-btn.search-btn .square-btn-icon { color: #4f8ef7; font-size: 1.15rem; }
+.square-btn.glass-btn .square-btn-icon { color: #8b6cf7; font-size: 1.1rem; }
+.square-btn.glass-btn.active { outline-color: #8b6cf7; }
+
+[data-theme="light"] .square-btn:hover {
+  box-shadow: 0 4px 14px rgba(40, 70, 130, 0.16);
+}
+
+/* ===== TOOLBAR ===== */
+.toolbar-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  align-items: stretch;
+}
+
+.tool-btn.save-btn {
+  background: linear-gradient(135deg, var(--warning), #e8a000);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 14px;
+  padding: 11px 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255,209,102,0.3);
+}
+.tool-btn.save-btn:hover { filter: brightness(1.1); }
+
+.adjust-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ===== COLLAPSIBLE PANEL ===== */
+.collapsible-panel {
+  display: none;
+  overflow: hidden;
+}
+
+.collapsible-panel.open {
+  display: block;
+  animation: panelIn 0.25s ease;
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.panel-inner {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* smaller labels inside panels */
+.panel-inner .field label {
+  font-size: 0.68rem;
+}
+
+.panel-inner .field input,
+.panel-inner .field select {
+  padding: 8px 10px;
+  font-size: 0.83rem;
+}
+
+/* table scroll area */
+.table-body:not(.expense-list) { max-height: min(50dvh, 360px); overflow-y: auto; }
+
+/* ===== REPEAT OPTION ===== */
+.repeat-row {
+  background: rgba(255, 255, 255, 0.05);
+  border: var(--card-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .repeat-row {
+  background: rgba(255, 255, 255, 0.7);
+}
+.panel-toggles-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.panel-toggles-row .repeat-toggle,
+.panel-toggles-row .keep-panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+  margin: 0;
+  min-width: 0;
+}
+.panel-toggles-row .repeat-toggle {
+  border-left: 1px solid rgba(79,142,247,0.12);
+}
+.panel-toggles-row .repeat-toggle:hover { background: rgba(79,142,247,0.08); }
+.panel-toggles-row .keep-panel-toggle:hover { background: rgba(255,209,102,0.08); }
+.panel-toggles-row .keep-panel-toggle.active .toggle-label { color: var(--gold); }
+.toggle-label {
+  flex: 1;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  min-width: 0;
+}
+.repeat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+.repeat-toggle:hover { background: rgba(79,142,247,0.08); }
+.toggle-switch {
+  width: 36px; height: 20px;
+  background: var(--surface3);
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.25s;
+  flex-shrink: 0;
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  background: white;
+  border-radius: 50%;
+  top: 3px; right: 3px;
+  transition: transform 0.25s;
+}
+.toggle-switch.on { background: var(--primary); }
+.toggle-switch.on::after { transform: translateX(-16px); }
+.repeat-options { display: none; padding: 0 12px 10px; border-top: 1px solid rgba(79,142,247,0.12); }
+.repeat-options.show { display: block; }
+
+
+</style>
+</head>
+<body>
+<script>
+(function () {
+  try {
+    var ls = localStorage;
+    if (ls.getItem('sm_theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    var fonts = ["'Tajawal', sans-serif", "'Cairo', sans-serif", "'Almarai', sans-serif", "'Noto Kufi Arabic', sans-serif", "'IBM Plex Sans Arabic', sans-serif"];
+    var i = parseInt(ls.getItem('sm_font_index') || '0', 10);
+    if (Number.isNaN(i)) i = 0;
+    document.documentElement.style.setProperty('--app-font', fonts[((i % 5) + 5) % 5]);
+    var tex = ls.getItem('sm_tex_slug');
+    var texColor = ls.getItem('sm_tex_color');
+    if (tex) {
+      document.documentElement.style.setProperty('--tt-pattern', 'url("https://www.transparenttextures.com/patterns/' + tex + '.png")');
+      if (texColor) document.documentElement.style.setProperty('--tt-bg', texColor);
+      document.body.setAttribute('data-tex-bg', 'on');
+    }
+    var glass = ls.getItem('sm_glass_level');
+    if (glass) document.body.setAttribute('data-glass', glass);
+  } catch (e) {}
+})();
+</script>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toast-msg"></span></div>
+
+<!-- APPEARANCE DOCK -->
+<div class="appearance-dock" id="appearance-dock">
+  <div class="appearance-quick">
+    <button type="button" class="square-btn square-btn--dock" id="btn-fx-toggle" title="إيقاف/تشغيل حركة الإيموجي" aria-label="تبديل حركة الإيموجي">
+      <span class="square-btn-icon">✨</span>
+      <span class="square-btn-label">حركة</span>
+    </button>
+    <button type="button" class="square-btn square-btn--dock" id="btn-theme-toggle" title="التبديل إلى الوضع النهاري" aria-label="تبديل النمط">
+      <span class="square-btn-icon">🌙</span>
+      <span class="square-btn-label">نمط</span>
+    </button>
+    <button type="button" class="square-btn square-btn--dock" id="btn-font-cycle" title="تبديل الخط — تاجوال" aria-label="تبديل الخط">
+      <span class="square-btn-icon" id="font-chip-label">ت</span>
+      <span class="square-btn-label">خط</span>
+    </button>
+    <button type="button" class="square-btn square-btn--dock" id="btn-bg-pattern" title="خلفية عشوائية" aria-label="تغيير الخلفية">
+      <span class="square-btn-icon">🖼️</span>
+      <span class="square-btn-label">خلفية</span>
+    </button>
+  </div>
+</div>
+
+<!-- SAVING OVERLAY -->
+<div class="saving-overlay" id="saving-overlay">
+  <div class="spinner" style="width:36px;height:36px;border-width:3px;"></div>
+  <p>جاري الحفظ...</p>
+</div>
+
+<!-- ===== HEADER ===== -->
+<header class="app-header">
+  <div class="header-inner">
+    <div style="width:80px;" id="header-spacer-left"></div>
+    <div class="header-title">نظام إدارة الراتب</div>
+    <div style="width:80px;" id="header-spacer"></div>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="app-wrap">
+
+  <!-- SALARY BANNER -->
+  <div class="salary-card" id="salary-card">
+
+    <!-- Floating money particles canvas -->
+    <canvas id="money-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;border-radius:20px;z-index:0;"></canvas>
+
+    <div class="salary-card-top" style="position:relative;z-index:1;">
+      <div class="salary-card-tools">
+        <button type="button" class="salary-icon-btn btn-edit-salary" onclick="openSalaryModal()" title="تعديل الراتب">✏️</button>
+        <div class="salary-month-bar">
+          <button type="button" class="salary-month-btn" onclick="openMonthModal()" title="تبديل الشهر">
+            <span>📅 <span id="current-month-display">--</span></span>
+            <span class="deposit-hint" id="deposit-date-hint" style="display:none;"></span>
+          </button>
+          <button type="button" class="salary-icon-btn btn-add-month-main" onclick="openAddMonthFlow()" title="إضافة شهر جديد" aria-label="إضافة شهر">+</button>
+        </div>
+      </div>
+      <div class="salary-hero">
+        <div class="salary-hero-grid">
+          <div class="hero-stat hero-stat-spent">
+            <div class="hero-stat-label">📤 المصروف</div>
+            <div class="hero-stat-value red" id="stat-spent">0</div>
+          </div>
+          <div class="salary-hero-center">
+            <div class="salary-hero-label">💰 إجمالي الراتب</div>
+            <div class="salary-value" id="total-salary">0</div>
+            <div class="salary-hero-currency">ر.ع · OMANI RIAL</div>
+          </div>
+          <div class="hero-stat hero-stat-remaining">
+            <div class="hero-stat-label">🐖 الباقي</div>
+            <div class="hero-stat-value green" id="stat-remaining">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions-zone">
+  <!-- TOOLBAR -->
+    <div class="toolbar-row">
+      <button type="button" class="square-btn add-btn" id="btn-add-toggle" onclick="tryOpenAddPanel(this)"
+        aria-expanded="false" aria-controls="add-panel" title="إضافة معاملة">
+        <span class="square-btn-icon" id="add-btn-icon" aria-hidden="true">+</span>
+        <span class="square-btn-label" id="add-btn-label">إضافة</span>
+      </button>
+      <button type="button" class="square-btn deposit-btn" onclick="openDepositModal()" title="إيداع مبلغ">
+        <span class="square-btn-icon">💵</span>
+        <span class="square-btn-label">إيداع</span>
+      </button>
+      <button type="button" class="square-btn search-btn" onclick="togglePanel('search-panel', this)" title="بحث">
+        <span class="square-btn-icon">🔍</span>
+        <span class="square-btn-label">بحث</span>
+      </button>
+      <button type="button" class="square-btn glass-btn" id="btn-glass-toggle" title="شفافية الحاويات" aria-label="زيادة الشفافية">
+        <span class="square-btn-icon" id="glass-btn-icon">◐</span>
+        <span class="square-btn-label" id="glass-btn-label">شفاف</span>
+      </button>
+    </div>
+
+  <!-- ADD PANEL (collapsed by default) -->
+  <div class="collapsible-panel" id="add-panel">
+    <div class="panel-inner">
+      <div class="form-row">
+        <div class="field">
+          <label>🏷️ النوع</label>
+          <select id="inp-type">
+            <option value="">اختر النوع</option>
+            <option value="الفواتير">الفواتير</option>
+            <option value="القروض">القروض</option>
+            <option value="الديون">الديون</option>
+            <option value="الايجارات">الايجارات</option>
+            <option value="الاساسيات">الاساسيات</option>
+            <option value="الكماليات">الكماليات</option>
+            <option value="الصيانة">الصيانة</option>
+            <option value="الصدقات">الصدقات</option>
+            <option value="المدخرات">المدخرات</option>
+            <option value="اخرى">اخرى</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>💵 المبلغ</label>
+          <input type="number" id="inp-amount" placeholder="0" step="0.001" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>📝 الوصف</label>
+        <input type="text" id="inp-desc" placeholder="أدخل وصف الصرفية" style="font-size:0.8rem;">
+      </div>
+
+      <!-- REPEAT + KEEP OPEN -->
+      <div class="repeat-row">
+        <div class="panel-toggles-row">
+          <label class="repeat-toggle" onclick="toggleRepeat()">
+            <span id="repeat-icon">🔁</span>
+            <span class="toggle-label">تكرار شهري</span>
+            <div class="toggle-switch" id="repeat-switch"></div>
+          </label>
+          <label class="keep-panel-toggle" id="keep-panel-toggle" onclick="toggleKeepAddPanel()">
+            <span>📌</span>
+            <span class="toggle-label">إبقاء مفتوحة</span>
+            <div class="toggle-switch" id="keep-panel-switch"></div>
+          </label>
+        </div>
+        <div class="repeat-options" id="repeat-options">
+          <div class="field" style="margin-top:8px;">
+            <label>📆 عدد الأشهر</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="inp-repeat-mode" onchange="updateRepeatMode()" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Tajawal',sans-serif;font-size:0.82rem;outline:none;">
+                <option value="infinite">♾️ كل شهر بلا حد</option>
+                <option value="fixed">🔢 عدد محدد من الأشهر</option>
+              </select>
+              <input type="number" id="inp-repeat-count" min="1" max="60" value="3" placeholder="عدد الأشهر"
+                style="width:80px;display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Tajawal',sans-serif;font-size:0.82rem;outline:none;text-align:center;">
+            </div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-muted);padding:2px 2px 0;display:flex;align-items:center;gap:4px;">
+            💡 تُضاف للشهر الحالي فقط · الشهر القادم يظهر تلقائياً
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-bar" style="margin-top:4px;">
+        <button type="button" class="btn btn-success" onclick="addRow()">✅ إضافة</button>
+        <button type="button" class="btn btn-ghost" onclick="clearForm()">🔄 مسح</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH PANEL (collapsed by default) -->
+  <div class="collapsible-panel" id="search-panel">
+    <div class="panel-inner">
+      <div class="form-row">
+        <div class="field">
+          <label>🏷️ النوع</label>
+          <select id="search-type" onchange="filterRows()">
+            <option value="">الكل</option>
+            <option value="الفواتير">الفواتير</option>
+            <option value="القروض">القروض</option>
+            <option value="الديون">الديون</option>
+            <option value="الايجارات">الايجارات</option>
+            <option value="الاساسيات">الاساسيات</option>
+            <option value="الكماليات">الكماليات</option>
+            <option value="الصيانة">الصيانة</option>
+            <option value="الصدقات">الصدقات</option>
+            <option value="المدخرات">المدخرات</option>
+            <option value="اخرى">اخرى</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>📅 من</label>
+          <input type="date" id="search-from" onchange="filterRows()">
+        </div>
+        <div class="field">
+          <label>📅 إلى</label>
+          <input type="date" id="search-to" onchange="filterRows()">
+        </div>
+      </div>
+      <div class="actions-bar" style="margin-top:4px;">
+        <button class="btn btn-primary" onclick="filterRows()">🔍 بحث</button>
+        <button class="btn btn-ghost" onclick="resetFilter()">❌ مسح</button>
+      </div>
+    </div>
+  </div>
+  </div><!-- /actions-zone -->
+
+  <!-- EXPENSE LIST -->
+  <div class="table-card">
+    <div class="list-section-head">
+      <span class="list-section-title"><i class="fas fa-list-ul"></i> المعاملات</span>
+      <span class="list-section-count" id="expense-count">0</span>
+    </div>
+    <div class="table-body expense-list" id="table-body">
+      <div class="empty-state">
+        <i class="fas fa-receipt"></i>
+        <p>لا توجد معاملات مسجلة</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== INSTALL BAR ===== -->
+<div class="install-bar" id="install-bar">
+  <button class="btn-install" id="install-btn">
+    <i class="fas fa-mobile-alt"></i> تثبيت التطبيق على الجهاز
+  </button>
+</div>
+
+<!-- ===== LOGIN MODAL ===== -->
+<div class="modal-overlay" id="login-overlay" onclick="overlayClick(event,'login-overlay')">
+  <div class="modal" id="login-modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-lock"></i> تسجيل الدخول</div>
+      <button class="btn-modal-close" onclick="closeModal('login-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="login-alert"></div>
+      <div class="field">
+        <label><i class="fas fa-phone"></i> رقم الهاتف</label>
+        <input type="tel" id="login-phone" placeholder="أدخل رقم هاتفك">
+      </div>
+      <div class="field">
+        <label><i class="fas fa-key"></i> كلمة المرور</label>
+        <input type="password" id="login-pass" placeholder="أدخل كلمة المرور" onkeypress="if(event.key==='Enter')doLogin()">
+      </div>
+      <a href="#" onclick="openForgotModal();return false;" style="font-size:0.78rem;color:var(--primary);text-decoration:none;">نسيت كلمة المرور؟</a>
+    </div>
+    <div class="modal-footer modal-footer-actions">
+      <button type="button" class="btn btn-ghost btn-modal-action" onclick="openRegisterModal()"><i class="fas fa-user-plus"></i> تسجيل</button>
+      <button type="button" class="btn btn-primary btn-modal-action" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> دخول</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REGISTER MODAL ===== -->
+<div class="modal-overlay" id="register-overlay" onclick="overlayClick(event,'register-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-user-plus"></i> تسجيل جديد</div>
+      <button class="btn-modal-close" onclick="closeModal('register-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="register-alert"></div>
+      <div class="field">
+        <label><i class="fas fa-phone"></i> رقم الهاتف</label>
+        <input type="tel" id="reg-phone" placeholder="أدخل رقم هاتفك">
+      </div>
+      <div class="field">
+        <label><i class="fas fa-key"></i> كلمة المرور</label>
+        <input type="password" id="reg-pass" placeholder="أدخل كلمة مرور">
+      </div>
+      <div class="field">
+        <label><i class="fas fa-money-bill-alt"></i> الراتب الشهري</label>
+        <input type="number" id="reg-salary" placeholder="0" step="0.001">
+      </div>
+    </div>
+    <div class="modal-footer modal-footer-actions">
+      <button type="button" class="btn btn-ghost btn-modal-action" onclick="closeModal('register-overlay')">إلغاء</button>
+      <button type="button" class="btn btn-success btn-modal-action" onclick="doRegister()"><i class="fas fa-save"></i> حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FORGOT MODAL ===== -->
+<div class="modal-overlay" id="forgot-overlay" onclick="overlayClick(event,'forgot-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-unlock-alt"></i> استعادة كلمة المرور</div>
+      <button class="btn-modal-close" onclick="closeModal('forgot-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="forgot-alert"></div>
+      <div class="field">
+        <label><i class="fas fa-envelope"></i> البريد الإلكتروني</label>
+        <input type="email" id="forgot-email" placeholder="أدخل بريدك الإلكتروني">
+      </div>
+    </div>
+    <div class="modal-footer modal-footer-actions">
+      <button type="button" class="btn btn-ghost btn-modal-action" onclick="closeModal('forgot-overlay')">إلغاء</button>
+      <button type="button" class="btn btn-primary btn-modal-action" onclick="doForgot()"><i class="fas fa-paper-plane"></i> إرسال</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONFIRM DELETE MODAL ===== -->
+<div class="modal-overlay" id="confirm-overlay" onclick="overlayClick(event,'confirm-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--danger)"><i class="fas fa-trash-alt"></i> تأكيد الحذف</div>
+      <button class="btn-modal-close" onclick="closeModal('confirm-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-box error"><i class="fas fa-exclamation-triangle"></i> هل أنت متأكد من حذف هذا الصف؟</div>
+    </div>
+    <div class="modal-footer modal-footer-actions">
+      <button type="button" class="btn btn-ghost btn-modal-action" onclick="closeModal('confirm-overlay')">إلغاء</button>
+      <button type="button" class="btn btn-danger btn-modal-action" id="confirm-delete-btn"><i class="fas fa-trash"></i> حذف</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT MODAL ===== -->
+<div class="modal-overlay" id="edit-overlay" onclick="overlayClick(event,'edit-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-edit"></i> تعديل المعاملة</div>
+      <button class="btn-modal-close" onclick="closeModal('edit-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-idx">
+      <div class="form-row">
+        <div class="field">
+          <label><i class="fas fa-tag"></i> النوع</label>
+          <select id="edit-type">
+            <option value="الفواتير">الفواتير</option>
+            <option value="القروض">القروض</option>
+            <option value="الديون">الديون</option>
+            <option value="الايجارات">الايجارات</option>
+            <option value="الاساسيات">الاساسيات</option>
+            <option value="الكماليات">الكماليات</option>
+            <option value="الصيانة">الصيانة</option>
+            <option value="الصدقات">الصدقات</option>
+            <option value="المدخرات">المدخرات</option>
+            <option value="إيداع">إيداع</option>
+            <option value="اخرى">اخرى</option>
+          </select>
+        </div>
+        <div class="field">
+          <label><i class="fas fa-money-bill-wave"></i> المبلغ</label>
+          <input type="number" id="edit-amount" step="0.001" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label><i class="fas fa-align-left"></i> الوصف</label>
+        <input type="text" id="edit-desc" placeholder="الوصف">
+      </div>
+      <div class="field">
+        <label><i class="fas fa-calendar"></i> التاريخ</label>
+        <input type="date" id="edit-date">
+      </div>
+    </div>
+    <div class="modal-footer modal-footer-actions">
+      <button type="button" class="btn btn-ghost btn-modal-action" onclick="closeModal('edit-overlay')">إلغاء</button>
+      <button type="button" class="btn btn-primary btn-modal-action" onclick="saveEdit()"><i class="fas fa-save"></i> حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MONTH MODAL ===== -->
+<div class="modal-overlay" id="month-overlay" onclick="overlayClick(event,'month-overlay')">
+  <div class="modal modal-month">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-calendar-alt"></i> إدارة الأشهر</div>
+      <button class="btn-modal-close" onclick="closeModal('month-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="month-alert"></div>
+
+      <div class="month-current-card" id="month-current-card"></div>
+
+      <div class="month-other-list" id="month-other-list"></div>
+
+      <div class="month-add-form" id="month-add-form">
+        <div class="form-title">إضافة شهر جديد</div>
+        <div class="field">
+          <label><i class="fas fa-calendar"></i> الشهر</label>
+          <input type="month" id="new-month-input">
+        </div>
+        <div class="field">
+          <label><i class="fas fa-money-bill-alt"></i> الراتب <span style="font-weight:400;color:var(--text-muted)">(اختياري)</span></label>
+          <input type="number" id="new-month-salary" placeholder="يُنسخ من الشهر الحالي" step="0.001" min="0">
+        </div>
+        <label class="optional-toggle" onclick="toggleDepositField()">
+          <input type="checkbox" id="use-deposit-date" onclick="event.stopPropagation(); toggleDepositField()">
+          <span>تاريخ إيداع الراتب (اختياري)</span>
+        </label>
+        <div class="deposit-field-wrap" id="new-month-deposit-wrap">
+          <div class="field" style="margin-top:0;">
+            <label><i class="fas fa-university"></i> تاريخ الإيداع</label>
+            <input type="date" id="new-month-deposit">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer modal-footer-actions">
+      <button type="button" class="btn btn-ghost btn-modal-action" onclick="closeModal('month-overlay')">إلغاء</button>
+      <button type="button" class="btn btn-success btn-modal-action" onclick="createNewMonth()">إضافة شهر</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SALARY MODAL ===== -->
+<div class="modal-overlay" id="salary-overlay" onclick="overlayClick(event,'salary-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-wallet"></i> إعداد الراتب</div>
+      <button class="btn-modal-close" onclick="closeModal('salary-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="salary-prompt-msg"></div>
+      <div class="field">
+        <label id="salary-input-label"><i class="fas fa-money-bill-alt"></i> الراتب الشهري</label>
+        <input type="number" id="salary-input" placeholder="0" step="0.001" min="0">
+      </div>
+      <p class="adjust-hint" id="salary-deposit-hint" style="display:none;"></p>
+    </div>
+    <div class="modal-footer modal-footer-actions">
+      <button type="button" class="btn btn-ghost btn-modal-action" onclick="closeModal('salary-overlay')">إلغاء</button>
+      <button type="button" class="btn btn-success btn-modal-action" onclick="saveSalary()"><i class="fas fa-save"></i> حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DEPOSIT / WITHDRAW MODAL ===== -->
+<div class="modal-overlay" id="adjust-overlay" onclick="overlayClick(event,'adjust-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="adjust-modal-title"><i class="fas fa-hand-holding-usd"></i> إيداع مبلغ</div>
+      <button type="button" class="btn-modal-close" onclick="closeModal('adjust-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="adjust-prompt-msg"></div>
+      <div class="field">
+        <label id="adjust-field-label"><i class="fas fa-coins"></i> المبلغ</label>
+        <input type="number" id="adjust-amount" placeholder="0" step="0.001" min="0">
+      </div>
+      <div class="field">
+        <label><i class="fas fa-sticky-note"></i> اسم أو ملاحظة <span style="font-weight:400;color:var(--text-muted)">(اختياري)</span></label>
+        <input type="text" id="adjust-note" placeholder="مثال: راتب إضافي، مكافأة..." maxlength="80">
+      </div>
+      <p class="adjust-hint" id="adjust-hint">يُضاف المبلغ إلى راتب الشهر الحالي</p>
+    </div>
+    <div class="modal-footer modal-footer-actions">
+      <button type="button" class="btn btn-ghost btn-modal-action" onclick="closeModal('adjust-overlay')">إلغاء</button>
+      <button type="button" class="btn btn-success btn-modal-action" id="adjust-confirm-btn" onclick="applySalaryAdjust()">إيداع</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== TOGGLE PANELS =====
+let keepAddPanelOpen = localStorage.getItem('sm_keep_add_panel') === '1';
+
+function syncKeepPanelUI() {
+  const sw = document.getElementById('keep-panel-switch');
+  const lbl = document.getElementById('keep-panel-toggle');
+  if (sw) sw.classList.toggle('on', keepAddPanelOpen);
+  if (lbl) lbl.classList.toggle('active', keepAddPanelOpen);
+}
+
+function toggleKeepAddPanel() {
+  keepAddPanelOpen = !keepAddPanelOpen;
+  localStorage.setItem('sm_keep_add_panel', keepAddPanelOpen ? '1' : '0');
+  syncKeepPanelUI();
+  if (document.getElementById('add-panel')?.classList.contains('open')) {
+    setAddFocusMode(true);
+  }
+}
+
+function setAddFocusMode(on) {
+  const card = document.getElementById('salary-card');
+  if (!card) return;
+  card.classList.toggle('add-focus-compact', !!on && !keepAddPanelOpen);
+}
+
+function closePanel(panelId, btnSelector) {
+  const panel = document.getElementById(panelId);
+  const btn = btnSelector ? document.querySelector(btnSelector) : null;
+  if (panel) panel.classList.remove('open');
+  if (btn) btn.classList.remove('active');
+  if (panelId === 'add-panel') {
+    setAddFocusMode(false);
+    syncAddToggleBtn();
+  }
+}
+
+function getActiveSalary() {
+  if (!currentUser) return 0;
+  const months = getMonthsStore();
+  const m = months[activeMonthKey];
+  const s = m?.salary ?? currentUser.salary ?? 0;
+  return parseFloat(s) || 0;
+}
+
+function isSalaryZero() {
+  return getActiveSalary() <= 0;
+}
+
+function syncAddToggleBtn() {
+  const open = document.getElementById('add-panel')?.classList.contains('open');
+  const btn = document.getElementById('btn-add-toggle');
+  const icon = document.getElementById('add-btn-icon');
+  if (btn) {
+    btn.classList.toggle('active', !!open);
+    btn.classList.toggle('is-open', !!open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.title = open ? 'إغلاق' : 'إضافة معاملة';
+  }
+  if (icon) icon.textContent = open ? '−' : '+';
+  const label = document.getElementById('add-btn-label');
+  if (label) label.textContent = open ? 'إغلاق' : 'إضافة';
+}
+
+function closeAddPanel() {
+  closePanel('add-panel', '.add-btn');
+  syncAddToggleBtn();
+}
+
+function tryOpenAddPanel(btn) {
+  if (isSalaryZero()) {
+    promptSalaryIfNeeded('add');
+    return;
+  }
+  closePanel('search-panel', '.search-btn');
+  const panel = document.getElementById('add-panel');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    closeAddPanel();
+    return;
+  }
+  panel.classList.add('open');
+  btn.classList.add('active');
+  setAddFocusMode(true);
+  updateStats();
+  syncAddToggleBtn();
+  setTimeout(() => {
+    const amountEl = document.getElementById('inp-amount');
+    if (amountEl) amountEl.focus();
+  }, 80);
+}
+
+function promptSalaryIfNeeded(reason) {
+  if (!currentUser || !isSalaryZero()) return false;
+  const messages = {
+    add: 'أدخل الراتب أولاً قبل إضافة المعاملات.',
+    deposit: 'حدّد الراتب أولاً ثم يمكنك إيداع مبالغ إضافية.',
+    startup: 'مرحباً! أدخل راتبك الشهري للبدء في استخدام النظام.'
+  };
+  const message = messages[reason] || messages.startup;
+  openSalaryModal({ message });
+  return true;
+}
+
+function togglePanel(panelId, btn) {
+  const panel = document.getElementById(panelId);
+  const otherId = panelId === 'add-panel' ? 'search-panel' : 'add-panel';
+  const otherBtn = document.querySelector(otherId === 'add-panel' ? '.add-btn' : '.search-btn');
+  const other = document.getElementById(otherId);
+  const isOpen = panel.classList.contains('open');
+
+  other.classList.remove('open');
+  if (otherBtn) otherBtn.classList.remove('active');
+  if (otherId === 'add-panel') setAddFocusMode(false);
+
+  if (isOpen) {
+    panel.classList.remove('open');
+    btn.classList.remove('active');
+    if (panelId === 'add-panel') setAddFocusMode(false);
+  } else {
+    panel.classList.add('open');
+    btn.classList.add('active');
+    if (panelId === 'add-panel') {
+      setAddFocusMode(true);
+      updateStats();
+    }
+    setTimeout(() => {
+      const first = panel.querySelector('select, input');
+      if (first) first.focus();
+    }, 80);
+  }
+  if (panelId === 'add-panel' || otherId === 'add-panel') syncAddToggleBtn();
+}
+
+// ===== STATE =====
+let currentUser = null;
+let rows = [];
+let filteredRows = [];
+let deferredPrompt = null;
+let activeMonthKey = '';
+
+const FIREBASE_URL = 'https://salarymanagement-b3dc5-default-rtdb.firebaseio.com';
+const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+// ===== MONEY CANVAS + FX TOGGLE =====
+(function() {
+  const canvas = document.getElementById('money-canvas');
+  const fxBtn = document.getElementById('btn-fx-toggle');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const symbols = ['$','﷼','€','£','¥','💰','💵','💴','💶','💷','🪙'];
+  let particles = [];
+  let W, H;
+  let fxEnabled = localStorage.getItem('sm_fx_animation') !== '0';
+  let rafId = null;
+
+  function resize() {
+    W = canvas.offsetWidth; H = canvas.offsetHeight;
+    canvas.width = W; canvas.height = H;
+  }
+
+  function spawn() {
+    return {
+      x: Math.random() * W,
+      y: H + 20,
+      sym: symbols[Math.floor(Math.random() * symbols.length)],
+      size: 10 + Math.random() * 14,
+      speed: 0.4 + Math.random() * 0.7,
+      drift: (Math.random() - 0.5) * 0.4,
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.04,
+      alpha: 0.08 + Math.random() * 0.13,
+    };
+  }
+
+  function init() {
+    resize();
+    particles = [];
+    for (let i = 0; i < 18; i++) {
+      const p = spawn();
+      p.y = Math.random() * H;
+      particles.push(p);
+    }
+  }
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, W || canvas.width, H || canvas.height);
+  }
+
+  function draw() {
+    rafId = requestAnimationFrame(draw);
+    if (!fxEnabled) return;
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = p.alpha;
+      ctx.font = `${p.size}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#ffd166';
+      ctx.fillText(p.sym, 0, 0);
+      ctx.restore();
+
+      p.y -= p.speed;
+      p.x += p.drift;
+      p.rot += p.rotSpeed;
+
+      if (p.y < -20) Object.assign(p, spawn());
+    });
+  }
+
+  function updateFxButton() {
+    if (!fxBtn) return;
+    fxBtn.classList.toggle('off', !fxEnabled);
+    fxBtn.textContent = fxEnabled ? '✨' : '💤';
+    fxBtn.title = fxEnabled ? 'إيقاف حركة الإيموجي' : 'تشغيل حركة الإيموجي';
+    canvas.style.opacity = fxEnabled ? '1' : '0';
+  }
+
+  window.toggleMoneyFx = function() {
+    fxEnabled = !fxEnabled;
+    localStorage.setItem('sm_fx_animation', fxEnabled ? '1' : '0');
+    updateFxButton();
+    if (!fxEnabled) clearCanvas();
+    else if (!particles.length) init();
+  };
+
+  if (fxBtn) {
+    fxBtn.addEventListener('click', () => {
+      toggleMoneyFx();
+      showToast(fxEnabled ? 'تم تشغيل حركة الإيموجي ✨' : 'تم إيقاف حركة الإيموجي', 'success');
+    });
+  }
+
+  window.addEventListener('resize', () => { resize(); });
+  init();
+  updateFxButton();
+  if (!fxEnabled) clearCanvas();
+  draw();
+})();
+
+// ===== MONTHS =====
+function monthsStoreKey() { return `sm_months_${currentUser.phone}`; }
+function activeMonthStorageKey() { return `sm_active_month_${currentUser.phone}`; }
+
+function getMonthsStore() {
+  return JSON.parse(localStorage.getItem(monthsStoreKey()) || '{}');
+}
+
+function saveMonthsStore(data) {
+  localStorage.setItem(monthsStoreKey(), JSON.stringify(data));
+}
+
+function formatMonthLabel(monthKey) {
+  if (!monthKey) return '--';
+  const [y, m] = monthKey.split('-');
+  const mi = parseInt(m, 10) - 1;
+  return (MONTHS_AR[mi] || m) + ' ' + y;
+}
+
+function formatShortDate(dateStr) {
+  if (!dateStr) return '';
+  const p = dateStr.split('-');
+  return `${p[2]}/${p[1]}/${String(p[0]).slice(2)}`;
+}
+
+function getNextMonthKey(fromKey) {
+  const [y, m] = fromKey.split('-').map(Number);
+  const d = new Date(y, m - 1, 1);
+  d.setMonth(d.getMonth() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getActiveMonthEndDate() {
+  const key = activeMonthKey || today().slice(0, 7);
+  const [y, m] = key.split('-').map(Number);
+  return formatDateObj(new Date(y, m, 0));
+}
+
+function defaultExpenseDate() {
+  const nowKey = today().slice(0, 7);
+  if (activeMonthKey === nowKey) return today();
+  return `${activeMonthKey}-01`;
+}
+
+function persistCurrentMonth() {
+  if (!currentUser || !activeMonthKey) return;
+  const months = getMonthsStore();
+  months[activeMonthKey] = {
+    ...(months[activeMonthKey] || {}),
+    salary: currentUser.salary || 0
+  };
+  saveMonthsStore(months);
+}
+
+function ensureMonthsInit() {
+  const nowKey = today().slice(0, 7);
+  let months = getMonthsStore();
+  if (!Object.keys(months).length) {
+    months[nowKey] = { salary: currentUser.salary || 0, depositDate: null };
+    saveMonthsStore(months);
+  }
+  let active = localStorage.getItem(activeMonthStorageKey());
+  if (!active || !months[active]) {
+    active = months[nowKey] ? nowKey : Object.keys(months).sort().pop();
+    localStorage.setItem(activeMonthStorageKey(), active);
+  }
+  activeMonthKey = active;
+  const m = months[activeMonthKey] || { salary: 0 };
+  currentUser.salary = m.salary || 0;
+  updateMonthDisplay();
+}
+
+function updateMonthDisplay() {
+  const el = document.getElementById('current-month-display');
+  const hint = document.getElementById('deposit-date-hint');
+  if (el) el.textContent = formatMonthLabel(activeMonthKey);
+  const months = getMonthsStore();
+  const dep = months[activeMonthKey]?.depositDate;
+  if (hint) {
+    if (dep) {
+      hint.textContent = 'إيداع: ' + formatShortDate(dep);
+      hint.style.display = 'block';
+    } else {
+      hint.textContent = '';
+      hint.style.display = 'none';
+    }
+  }
+}
+
+function renderMonthList() {
+  const currentCard = document.getElementById('month-current-card');
+  const otherList = document.getElementById('month-other-list');
+  if (!currentCard || !otherList) return;
+
+  const months = getMonthsStore();
+  const keys = Object.keys(months).sort().reverse();
+  const cur = months[activeMonthKey] || { salary: 0 };
+  const depCur = cur.depositDate ? `<br>إيداع: ${formatShortDate(cur.depositDate)}` : '';
+
+  currentCard.innerHTML = `
+    <div class="mc-title">${formatMonthLabel(activeMonthKey)}</div>
+    <div class="mc-meta">راتب ${formatNum(cur.salary || 0)} ر.ع${depCur}</div>
+    <span class="mc-badge">● الشهر الحالي</span>`;
+
+  const others = keys.filter(k => k !== activeMonthKey);
+  if (!others.length) {
+    otherList.innerHTML = '';
+    return;
+  }
+  otherList.innerHTML = others.map(key => {
+    const m = months[key];
+    const dep = m.depositDate ? ` · إيداع ${formatShortDate(m.depositDate)}` : '';
+    return `
+      <button type="button" class="month-list-item" onclick="switchMonth('${key}')">
+        <div>
+          <div class="ml-title">${formatMonthLabel(key)}</div>
+          <div class="ml-meta">راتب ${formatNum(m.salary || 0)}${dep}</div>
+        </div>
+      </button>`;
+  }).join('');
+}
+
+function prepareAddMonthForm() {
+  const next = getNextMonthKey(activeMonthKey || today().slice(0, 7));
+  document.getElementById('new-month-input').value = next;
+  document.getElementById('new-month-salary').value = currentUser.salary || '';
+  document.getElementById('use-deposit-date').checked = false;
+  document.getElementById('new-month-deposit-wrap').classList.remove('show');
+  document.getElementById('new-month-deposit').value = '';
+}
+
+function openAddMonthFlow() {
+  openMonthModal(true);
+}
+
+function openMonthModal(showAddForm) {
+  if (!currentUser) return;
+  renderMonthList();
+  prepareAddMonthForm();
+  const form = document.getElementById('month-add-form');
+  if (showAddForm) {
+    form.classList.add('open');
+    setTimeout(() => document.getElementById('new-month-input').focus(), 200);
+  } else {
+    form.classList.remove('open');
+  }
+  showAlert(document.getElementById('month-alert'), '', '');
+  closeAllModals();
+  document.getElementById('month-overlay').style.display = 'flex';
+}
+
+function toggleDepositField() {
+  const on = document.getElementById('use-deposit-date').checked;
+  const wrap = document.getElementById('new-month-deposit-wrap');
+  wrap.classList.toggle('show', on);
+  if (on && !document.getElementById('new-month-deposit').value) {
+    document.getElementById('new-month-deposit').value = today();
+  }
+}
+
+function createNewMonth() {
+  const alertEl = document.getElementById('month-alert');
+  const monthKey = document.getElementById('new-month-input').value;
+  if (!monthKey) {
+    showAlert(alertEl, 'يرجى اختيار الشهر', 'error');
+    return;
+  }
+  const months = getMonthsStore();
+  if (months[monthKey]) {
+    showAlert(alertEl, 'هذا الشهر موجود مسبقاً — اختره من القائمة أعلاه', 'error');
+    return;
+  }
+  persistCurrentMonth();
+  const salaryIn = parseFloat(document.getElementById('new-month-salary').value);
+  const salary = Number.isNaN(salaryIn) || salaryIn <= 0
+    ? (months[activeMonthKey]?.salary || currentUser.salary || 0)
+    : salaryIn;
+  const useDeposit = document.getElementById('use-deposit-date').checked;
+  const depositDate = useDeposit ? (document.getElementById('new-month-deposit').value || null) : null;
+
+  months[monthKey] = { salary, depositDate };
+  saveMonthsStore(months);
+  switchMonth(monthKey, true);
+  showAlert(alertEl, 'تم إضافة الشهر بنجاح ✅', 'success');
+  setTimeout(() => closeModal('month-overlay'), 800);
+}
+
+function switchMonth(monthKey, skipPersist) {
+  if (!monthKey || monthKey === activeMonthKey) {
+    closeModal('month-overlay');
+    return;
+  }
+  if (!skipPersist) persistCurrentMonth();
+  localStorage.setItem(activeMonthStorageKey(), monthKey);
+  activeMonthKey = monthKey;
+  const months = getMonthsStore();
+  currentUser.salary = months[monthKey]?.salary || 0;
+  updateMonthDisplay();
+  document.getElementById('total-salary').textContent = formatNum(currentUser.salary);
+  filteredRows = [...rows];
+  applyRecurringMaintenance();
+  renderTable();
+  updateStats();
+  scheduleAutoSave();
+  closeModal('month-overlay');
+  showToast('تم التبديل إلى ' + formatMonthLabel(monthKey), 'success');
+}
+
+// ===== INIT =====
+async function initApp() {
+  const saved = localStorage.getItem('sm_user');
+  currentUser = saved ? JSON.parse(saved) : { phone: 'local', salary: 0 };
+  if (!saved) localStorage.setItem('sm_user', JSON.stringify(currentUser));
+  ensureMonthsInit();
+  document.getElementById('total-salary').textContent = formatNum(getActiveSalary());
+  syncKeepPanelUI();
+  await loadRows();
+  syncAddToggleBtn();
+  if (isSalaryZero()) {
+    setTimeout(() => promptSalaryIfNeeded('startup'), 200);
+  }
+}
+
+window.addEventListener('load', () => {
+  initApp();
+});
+
+// ===== AUTH =====
+async function doLogin() {
+  const phone = document.getElementById('login-phone').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  const alertEl = document.getElementById('login-alert');
+
+  if (!phone || !pass) { showAlert(alertEl, 'يرجى إدخال رقم الهاتف وكلمة المرور', 'error'); return; }
+
+  showAlert(alertEl, '<i class="fas fa-spinner fa-spin"></i> جاري تسجيل الدخول...', '');
+  try {
+    const res = await fetch(`${FIREBASE_URL}/users/${sanitize(phone)}.json`);
+    const data = await res.json();
+    if (!data) { showAlert(alertEl, 'رقم الهاتف غير مسجل', 'error'); return; }
+    if (data.password !== pass) { showAlert(alertEl, 'كلمة المرور خاطئة', 'error'); return; }
+
+    currentUser = { phone, salary: data.salary || 0 };
+    localStorage.setItem('sm_user', JSON.stringify(currentUser));
+    closeModal('login-overlay');
+    onLoginSuccess();
+    showToast('مرحباً بعودتك! 👋', 'success');
+  } catch (e) {
+    // Fallback to localStorage
+    const localUsers = JSON.parse(localStorage.getItem('sm_local_users') || '{}');
+    if (localUsers[phone] && localUsers[phone].password === pass) {
+      currentUser = { phone, salary: localUsers[phone].salary || 0 };
+      localStorage.setItem('sm_user', JSON.stringify(currentUser));
+      closeModal('login-overlay');
+      onLoginSuccess();
+      showToast('تم تسجيل الدخول محلياً', 'success');
+    } else {
+      showAlert(alertEl, 'خطأ في الاتصال. يرجى المحاولة مرة أخرى', 'error');
+    }
+  }
+}
+
+async function doRegister() {
+  const phone = document.getElementById('reg-phone').value.trim();
+  const pass = document.getElementById('reg-pass').value.trim();
+  const salary = parseFloat(document.getElementById('reg-salary').value) || 0;
+  const alertEl = document.getElementById('register-alert');
+
+  if (!phone || !pass) { showAlert(alertEl, 'يرجى ملء جميع الحقول', 'error'); return; }
+
+  showAlert(alertEl, '<i class="fas fa-spinner fa-spin"></i> جاري التسجيل...', '');
+  const userData = { password: pass, salary };
+
+  try {
+    await fetch(`${FIREBASE_URL}/users/${sanitize(phone)}.json`, {
+      method: 'PUT', body: JSON.stringify(userData), headers: { 'Content-Type': 'application/json' }
+    });
+    // Also save locally as backup
+    const localUsers = JSON.parse(localStorage.getItem('sm_local_users') || '{}');
+    localUsers[phone] = userData;
+    localStorage.setItem('sm_local_users', JSON.stringify(localUsers));
+
+    showAlert(alertEl, 'تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول', 'success');
+    setTimeout(() => { closeModal('register-overlay'); openLoginModal(); }, 1500);
+  } catch (e) {
+    const localUsers = JSON.parse(localStorage.getItem('sm_local_users') || '{}');
+    localUsers[phone] = userData;
+    localStorage.setItem('sm_local_users', JSON.stringify(localUsers));
+    showAlert(alertEl, 'تم التسجيل محلياً بنجاح', 'success');
+    setTimeout(() => { closeModal('register-overlay'); openLoginModal(); }, 1500);
+  }
+}
+
+function doForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const alertEl = document.getElementById('forgot-alert');
+  if (!email) { showAlert(alertEl, 'يرجى إدخال البريد الإلكتروني', 'error'); return; }
+  showAlert(alertEl, 'تم إرسال رابط الاستعادة إلى بريدك الإلكتروني', 'success');
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('sm_user');
+  rows = []; filteredRows = [];
+  renderTable();
+  updateStats();
+  document.getElementById('auth-btn').style.display = '';
+  document.getElementById('logout-btn').style.display = 'none';
+  document.getElementById('header-spacer').style.display = '';
+  document.getElementById('total-salary').textContent = '0';
+  showToast('تم تسجيل الخروج', 'success');
+}
+
+function onLoginSuccess() {
+  initApp();
+}
+
+// ===== DATA =====
+function sanitize(str) { return str.replace(/[.#$[\]]/g, '_'); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function formatNum(n) {
+  const v = parseFloat(n || 0);
+  if (Number.isNaN(v)) return '0';
+  return String(parseFloat(v.toFixed(3)));
+}
+
+function rowMonth(r) {
+  return (r && r.date ? String(r.date) : '').slice(0, 7);
+}
+
+function isDepositRow(r) {
+  return !!(r && (r.isDeposit === true || r.type === 'إيداع'));
+}
+
+function getMonthDepositsTotal(monthKey) {
+  const key = monthKey || activeMonthKey || today().slice(0, 7);
+  return rows
+    .filter(r => rowMonth(r) === key && isDepositRow(r))
+    .reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+}
+
+function getBaseSalary(monthKey) {
+  const key = monthKey || activeMonthKey || today().slice(0, 7);
+  const months = getMonthsStore();
+  const stored = parseFloat(months[key]?.salary ?? currentUser?.salary ?? 0) || 0;
+  return Math.max(0, stored - getMonthDepositsTotal(key));
+}
+
+async function loadRows() {
+  if (!currentUser) return;
+  document.getElementById('table-body').innerHTML = `<div class="loading"><div class="spinner"></div> جاري تحميل البيانات...</div>`;
+
+  rows = JSON.parse(localStorage.getItem(`sm_rows_${currentUser.phone}`) || '[]');
+  try { applyRecurringMaintenance(); } catch (e) { console.error(e); }
+  filteredRows = [...rows];
+  renderTable();
+  updateStats();
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`${FIREBASE_URL}/expenses/${sanitize(currentUser.phone)}.json`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data) return;
+    rows = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+    rows.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    try { applyRecurringMaintenance(); } catch (e) { console.error(e); }
+    filteredRows = [...rows];
+    renderTable();
+    updateStats();
+    persistLocal();
+  } catch (e) {
+    // البيانات المحلية معروضة بالفعل
+  }
+}
+
+let saveTimer = null;
+
+function persistLocal() {
+  if (!currentUser) return;
+  localStorage.setItem(`sm_rows_${currentUser.phone}`, JSON.stringify(rows));
+  localStorage.setItem('sm_user', JSON.stringify(currentUser));
+  persistCurrentMonth();
+}
+
+function scheduleAutoSave() {
+  persistLocal();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveData(true), 500);
+}
+
+async function saveData(silent = false) {
+  if (!currentUser) return;
+  persistLocal();
+  if (!silent) document.getElementById('saving-overlay').classList.add('show');
+  try {
+    const payload = {};
+    rows.forEach((r, i) => {
+      const { id, ...rest } = r;
+      payload[r.id || `r${i}`] = rest;
+    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    await fetch(`${FIREBASE_URL}/expenses/${sanitize(currentUser.phone)}.json`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!silent) showToast('تم الحفظ بنجاح ✅', 'success');
+  } catch (e) {
+    if (!silent) showToast('تم الحفظ محلياً', 'success');
+  } finally {
+    if (!silent) document.getElementById('saving-overlay').classList.remove('show');
+  }
+}
+
+// ===== REPEAT TOGGLE =====
+let repeatEnabled = false;
+
+function toggleRepeat() {
+  repeatEnabled = !repeatEnabled;
+  const sw = document.getElementById('repeat-switch');
+  const opts = document.getElementById('repeat-options');
+  sw.classList.toggle('on', repeatEnabled);
+  opts.classList.toggle('show', repeatEnabled);
+}
+
+function updateRepeatMode() {
+  const mode = document.getElementById('inp-repeat-mode').value;
+  const countEl = document.getElementById('inp-repeat-count');
+  countEl.style.display = mode === 'fixed' ? 'block' : 'none';
+}
+
+function formatDateObj(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function pruneFutureRows() {
+  if (!activeMonthKey) return;
+  rows = rows.filter(r => {
+    const m = rowMonth(r);
+    return m && m <= activeMonthKey;
+  });
+}
+
+function migrateLegacyRepeatRows() {
+  const groups = {};
+  rows.forEach(r => {
+    if (r.repeatId) return;
+    const key = `${r.type}|${r.amount}|${r.desc || ''}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  });
+
+  Object.values(groups).forEach(group => {
+    if (group.length < 2) return;
+    const monthKeys = new Set(group.map(r => rowMonth(r)).filter(Boolean));
+    if (monthKeys.size < 2) return;
+
+    const sorted = [...group].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    const repeatId = `rep_migrated_${sorted[0].id}`;
+    const repeatStart = sorted[0].date;
+
+    sorted.forEach((r, i) => {
+      const idx = rows.findIndex(x => x.id === r.id);
+      if (idx < 0) return;
+      rows[idx] = {
+        ...rows[idx],
+        repeat: true,
+        repeatId,
+        repeatStart,
+        repeatMode: 'infinite',
+        repeatTotal: '∞',
+        repeatIndex: i + 1
+      };
+    });
+  });
+}
+
+function getDisplayRows(list) {
+  const key = activeMonthKey || today().slice(0, 7);
+  return list.filter(r => rowMonth(r) === key);
+}
+
+function syncRecurringRows() {
+  const repeatIds = [...new Set(rows.filter(r => r.repeat && r.repeatId && !isDepositRow(r)).map(r => r.repeatId))];
+  const monthEnd = getActiveMonthEndDate();
+  const todayDate = new Date(`${monthEnd}T12:00:00`);
+  let changed = false;
+
+  repeatIds.forEach(repeatId => {
+    const group = rows.filter(r => r.repeatId === repeatId);
+    const template = group.reduce((best, r) => {
+      const start = r.repeatStart || r.date;
+      const bestStart = best.repeatStart || best.date;
+      return start < bestStart ? r : best;
+    }, group[0]);
+
+    const startStr = template.repeatStart || template.date;
+    const maxCount = template.repeatTotal === '∞'
+      ? Infinity
+      : (parseInt(template.repeatTotal, 10) || 1);
+    const cursor = new Date(`${startStr}T12:00:00`);
+    let index = 0;
+
+    while (index < maxCount) {
+      if (cursor > todayDate) break;
+
+      const dateStr = formatDateObj(cursor);
+      const monthKey = dateStr.slice(0, 7);
+      const exists = rows.some(r => r.repeatId === repeatId && rowMonth(r) === monthKey);
+
+      if (!exists) {
+        rows.push({
+          id: `r${Date.now()}_${index}_${Math.random().toString(36).slice(2, 5)}`,
+          type: template.type,
+          amount: template.amount,
+          desc: template.desc,
+          date: dateStr,
+          repeat: true,
+          repeatId,
+          repeatStart: startStr,
+          repeatMode: template.repeatMode,
+          repeatTotal: template.repeatTotal,
+          repeatIndex: index + 1
+        });
+        changed = true;
+      }
+
+      index++;
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+  });
+
+  if (changed) rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return changed;
+}
+
+function applyRecurringMaintenance() {
+  if (!currentUser) return false;
+  const before = rows.length;
+  migrateLegacyRepeatRows();
+  pruneFutureRows();
+  const added = syncRecurringRows();
+  if (added || rows.length !== before) scheduleAutoSave();
+  return added || rows.length !== before;
+}
+
+// ===== ROW OPERATIONS =====
+function addRow() {
+  const type = document.getElementById('inp-type').value;
+  const amount = parseFloat(document.getElementById('inp-amount').value);
+  const desc = document.getElementById('inp-desc').value.trim();
+
+  if (!type)           { showToast('يرجى اختيار النوع', 'error'); return; }
+  if (!amount || amount <= 0) { showToast('يرجى إدخال مبلغ صحيح', 'error'); return; }
+
+  const label = desc || type;
+  const baseId = Date.now();
+
+  if (repeatEnabled) {
+    const mode = document.getElementById('inp-repeat-mode').value;
+    const count = document.getElementById('inp-repeat-count').value;
+    const startDate = defaultExpenseDate();
+    const repeatId = 'rep_' + baseId;
+
+    rows.unshift({
+      id: 'r' + baseId,
+      type,
+      amount,
+      desc: label,
+      date: startDate,
+      repeat: true,
+      repeatId,
+      repeatStart: startDate,
+      repeatMode: mode,
+      repeatTotal: mode === 'infinite' ? '∞' : String(parseInt(count, 10) || 1),
+      repeatIndex: 1
+    });
+    showToast('✅ تمت إضافة صرفية الشهر الحالي · ستُضاف تلقائياً كل شهر', 'success');
+  } else {
+    rows.unshift({ id: 'r' + baseId, type, amount, desc: label, date: defaultExpenseDate() });
+    showToast('تمت الإضافة بنجاح ✅', 'success');
+  }
+
+  filteredRows = [...rows];
+  renderTable();
+  updateStats();
+  scheduleAutoSave();
+  clearForm({ preserveType: keepAddPanelOpen });
+  if (!keepAddPanelOpen) closeAddPanel();
+  else syncAddToggleBtn();
+}
+
+function deleteRow(id) {
+  const overlay = document.getElementById('confirm-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('confirm-delete-btn').onclick = () => {
+    const row = rows.find(r => r.id === id);
+    if (row && isDepositRow(row)) {
+      currentUser.salary = Math.max(0, getActiveSalary() - (parseFloat(row.amount) || 0));
+      persistCurrentMonth();
+      localStorage.setItem('sm_user', JSON.stringify(currentUser));
+    }
+    rows = rows.filter(r => r.id !== id);
+    filteredRows = filteredRows.filter(r => r.id !== id);
+    renderTable(); updateStats();
+    closeModal('confirm-overlay');
+    showToast('تم الحذف', 'success');
+    scheduleAutoSave();
+  };
+}
+
+function openEdit(id) {
+  const row = rows.find(r => r.id === id);
+  if (!row) return;
+  document.getElementById('edit-idx').value = id;
+  document.getElementById('edit-type').value = row.type;
+  document.getElementById('edit-amount').value = row.amount;
+  document.getElementById('edit-desc').value = row.desc;
+  document.getElementById('edit-date').value = row.date;
+  document.getElementById('edit-overlay').style.display = 'flex';
+}
+
+function saveEdit() {
+  const id = document.getElementById('edit-idx').value;
+  const idx = rows.findIndex(r => r.id === id);
+  if (idx < 0) return;
+  const newAmt = parseFloat(document.getElementById('edit-amount').value) || 0;
+  const wasDeposit = isDepositRow(rows[idx]);
+  if (wasDeposit) {
+    const oldAmt = parseFloat(rows[idx].amount) || 0;
+    currentUser.salary = Math.max(0, getActiveSalary() - oldAmt + newAmt);
+    persistCurrentMonth();
+    localStorage.setItem('sm_user', JSON.stringify(currentUser));
+  }
+  rows[idx] = {
+    ...rows[idx],
+    type: wasDeposit ? 'إيداع' : document.getElementById('edit-type').value,
+    amount: newAmt,
+    desc: document.getElementById('edit-desc').value,
+    date: document.getElementById('edit-date').value,
+    isDeposit: wasDeposit || undefined
+  };
+  filteredRows = [...rows];
+  renderTable(); updateStats();
+  closeModal('edit-overlay');
+  showToast('تم التعديل', 'success');
+  scheduleAutoSave();
+}
+
+function clearForm(opts = {}) {
+  const preserveType = !!opts.preserveType;
+  if (!preserveType) document.getElementById('inp-type').value = '';
+  document.getElementById('inp-amount').value = '';
+  document.getElementById('inp-desc').value = '';
+  // reset repeat
+  repeatEnabled = false;
+  const sw = document.getElementById('repeat-switch');
+  const optsEl = document.getElementById('repeat-options');
+  if (sw) sw.classList.remove('on');
+  if (optsEl) optsEl.classList.remove('show');
+  const cntEl = document.getElementById('inp-repeat-count');
+  if (cntEl) cntEl.style.display = 'none';
+  const modeEl = document.getElementById('inp-repeat-mode');
+  if (modeEl) modeEl.value = 'infinite';
+  const focusEl = preserveType ? document.getElementById('inp-amount') : document.getElementById('inp-type');
+  if (focusEl) focusEl.focus();
+}
+
+// ===== FILTER =====
+function filterRows() {
+  const type = document.getElementById('search-type').value;
+  const from = document.getElementById('search-from').value;
+  const to = document.getElementById('search-to').value;
+  filteredRows = rows.filter(r => {
+    if (type && r.type !== type) return false;
+    if (from && r.date < from) return false;
+    if (to && r.date > to) return false;
+    return true;
+  });
+  renderTable();
+}
+
+function resetFilter() {
+  document.getElementById('search-type').value = '';
+  document.getElementById('search-from').value = '';
+  document.getElementById('search-to').value = '';
+  filteredRows = [...rows];
+  renderTable();
+}
+
+// ===== RENDER TABLE =====
+const TYPE_ACCENT = {
+  'الفواتير': '#ff4d6d',
+  'القروض':   '#ff6b35',
+  'الديون':   '#ff9a3c',
+  'الايجارات':'#ffd166',
+  'الاساسيات':'#4f8ef7',
+  'الكماليات':'#a78bfa',
+  'الصيانة':  '#00c896',
+  'الصدقات':  '#00e5c3',
+  'المدخرات': '#4caf50',
+  'إيداع':    '#00c896',
+  'اخرى':     '#4a5578'
+};
+
+function getAccent(type) {
+  return TYPE_ACCENT[type] || TYPE_ACCENT['اخرى'];
+}
+
+function renderTable() {
+  const body = document.getElementById('table-body');
+  const countEl = document.getElementById('expense-count');
+  const visibleRows = getDisplayRows(filteredRows);
+  if (countEl) countEl.textContent = String(visibleRows.length);
+  if (!visibleRows || visibleRows.length === 0) {
+    body.innerHTML = `<div class="empty-state"><i class="fas fa-receipt"></i><p>لا توجد معاملات مسجلة</p></div>`;
+    return;
+  }
+  body.innerHTML = visibleRows.map((row, i) => {
+    const deposit  = isDepositRow(row);
+    const type     = row.type || 'اخرى';
+    const typeClass = 'type-' + type.replace(/\s/g, '');
+    const accent   = getAccent(type);
+    const shortDate = row.date ? row.date.slice(5).replace('-', '/') + '/' + row.date.slice(2,4) : '';
+    const title    = row.desc || type;
+    const repeatTag = !deposit && (row.repeat || row.repeatId)
+      ? `<span class="repeat-badge">🔁 شهري</span>` : '';
+    const zebra = i % 2 === 0 ? 'expense-zebra-a' : 'expense-zebra-b';
+    const amtClass = deposit ? 'expense-amount expense-amount--deposit' : 'expense-amount';
+    const amtText = deposit ? `+${formatNum(row.amount)}` : formatNum(row.amount);
+    return `
+      <div class="expense-item ${zebra}${deposit ? ' expense-item--deposit' : ''}">
+        <div class="expense-accent" style="background:${accent};"></div>
+        <div class="expense-inner">
+          <div class="expense-info">
+            <span class="expense-title" title="${title}">${title}</span>
+            <span class="expense-sub">
+              <span class="type-badge ${typeClass}">${type}</span>
+              ${repeatTag}
+              <span class="expense-date">${shortDate}</span>
+            </span>
+          </div>
+          <div class="expense-right">
+            <div class="${amtClass}">${amtText}<span>ر.ع</span></div>
+            <div class="expense-actions">
+              <button type="button" class="btn-icon edit" onclick="openEdit('${row.id}')"><i class="fas fa-pen"></i></button>
+              <button type="button" class="btn-icon delete" onclick="deleteRow('${row.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ===== STATS =====
+function updateStats() {
+  const salary = currentUser ? (currentUser.salary || 0) : 0;
+  const key = activeMonthKey || today().slice(0, 7);
+  const spent = rows
+    .filter(r => rowMonth(r) === key && !isDepositRow(r))
+    .reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  const remaining = salary - spent;
+  document.getElementById('stat-spent').textContent = formatNum(spent);
+  document.getElementById('stat-remaining').textContent = formatNum(remaining);
+  document.getElementById('total-salary').textContent = formatNum(salary);
+}
+
+// ===== SALARY =====
+function saveSalary() {
+  if (!currentUser) return;
+  const base = parseFloat(document.getElementById('salary-input').value) || 0;
+  const deposits = getMonthDepositsTotal(activeMonthKey);
+  const total = base + deposits;
+  if (total <= 0) {
+    showToast('يرجى إدخال راتب أكبر من صفر', 'error');
+    return;
+  }
+  currentUser.salary = total;
+  persistCurrentMonth();
+  localStorage.setItem('sm_user', JSON.stringify(currentUser));
+  updateStats();
+  closeModal('salary-overlay');
+  if (deposits > 0) {
+    showToast(`تم الحفظ: ${formatNum(base)} + ${formatNum(deposits)} إيداع = ${formatNum(total)} ر.ع`, 'success');
+  } else {
+    showToast('تم حفظ الراتب', 'success');
+  }
+  scheduleAutoSave();
+}
+
+function openDepositModal() {
+  if (isSalaryZero()) {
+    promptSalaryIfNeeded('deposit');
+    return;
+  }
+  const hintEl = document.getElementById('adjust-hint');
+  if (hintEl) {
+    hintEl.textContent = `الراتب الحالي ${formatNum(getActiveSalary())} ر.ع — يُضاف المبلغ إليه`;
+  }
+  document.getElementById('adjust-amount').value = '';
+  const noteEl = document.getElementById('adjust-note');
+  if (noteEl) noteEl.value = '';
+  closeAllModals();
+  document.getElementById('adjust-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('adjust-amount').focus(), 200);
+}
+
+function applySalaryAdjust() {
+  if (!currentUser) return;
+  const amt = parseFloat(document.getElementById('adjust-amount').value) || 0;
+  if (amt <= 0) {
+    showToast('يرجى إدخال مبلغ صحيح', 'error');
+    return;
+  }
+  const before = getActiveSalary();
+  currentUser.salary = before + amt;
+  const note = (document.getElementById('adjust-note')?.value || '').trim();
+  const label = note || 'إيداع مبلغ';
+  const depId = 'dep_' + Date.now();
+  rows.unshift({
+    id: depId,
+    type: 'إيداع',
+    amount: amt,
+    desc: label,
+    date: defaultExpenseDate(),
+    isDeposit: true
+  });
+  filteredRows = [...rows];
+  persistCurrentMonth();
+  localStorage.setItem('sm_user', JSON.stringify(currentUser));
+  renderTable();
+  updateStats();
+  closeModal('adjust-overlay');
+  showToast(`تم الإيداع: +${formatNum(amt)} ر.ع · الراتب ${formatNum(currentUser.salary)}`, 'success');
+  scheduleAutoSave();
+}
+
+function openSalaryModal(options = {}) {
+  const msgEl = document.getElementById('salary-prompt-msg');
+  const message = options.message || '';
+  if (msgEl) {
+    msgEl.innerHTML = message
+      ? `<div class="alert-box"><i class="fas fa-info-circle"></i> ${message}</div>`
+      : '';
+  }
+  const deposits = getMonthDepositsTotal(activeMonthKey);
+  const base = getBaseSalary(activeMonthKey);
+  const labelEl = document.getElementById('salary-input-label');
+  const hintEl = document.getElementById('salary-deposit-hint');
+  if (labelEl) {
+    labelEl.innerHTML = deposits > 0
+      ? '<i class="fas fa-money-bill-alt"></i> الراتب الأساسي'
+      : '<i class="fas fa-money-bill-alt"></i> الراتب الشهري';
+  }
+  if (hintEl) {
+    if (deposits > 0) {
+      hintEl.style.display = 'block';
+      hintEl.textContent = `إيداعات مسجّلة: +${formatNum(deposits)} ر.ع — الإجمالي بعد الحفظ = ${formatNum(base)} + ${formatNum(deposits)} = ${formatNum(base + deposits)} ر.ع`;
+    } else {
+      hintEl.style.display = 'none';
+      hintEl.textContent = '';
+    }
+  }
+  document.getElementById('salary-input').value = base || '';
+  closeAllModals();
+  document.getElementById('salary-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('salary-input').focus(), 300);
+}
+
+// ===== MODALS =====
+function openLoginModal() { closeAllModals(); document.getElementById('login-overlay').style.display = 'flex'; }
+function openRegisterModal() { closeModal('login-overlay'); document.getElementById('register-overlay').style.display = 'flex'; }
+function openForgotModal() { closeModal('login-overlay'); document.getElementById('forgot-overlay').style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none'); }
+
+function overlayClick(e, id) {
+  if (e.target.id === id) closeModal(id);
+}
+
+function showAlert(el, msg, type) {
+  if (!el) return;
+  el.innerHTML = msg ? `<div class="alert-box ${type}">${type === 'error' ? '<i class="fas fa-times-circle"></i>' : type === 'success' ? '<i class="fas fa-check-circle"></i>' : ''} ${msg}</div>` : '';
+}
+
+// ===== TOAST =====
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  const icon = type === 'success' ? 'check-circle' : 'times-circle';
+  t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${icon}"></i> <span>${msg}</span>`;
+  clearTimeout(toastTimer);
+  setTimeout(() => t.classList.add('show'), 10);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ===== APPEARANCE (theme, fonts) =====
+(function initAppearance() {
+  const FONTS = [
+    { family: "'Tajawal', sans-serif", label: 'تاجوال', chip: 'ت' },
+    { family: "'Cairo', sans-serif", label: 'القاهرة', chip: 'ق' },
+    { family: "'Almarai', sans-serif", label: 'المراعي', chip: 'م' },
+    { family: "'Noto Kufi Arabic', sans-serif", label: 'نوتو كوفي', chip: 'ن' },
+    { family: "'IBM Plex Sans Arabic', sans-serif", label: 'IBM Plex', chip: 'ب' },
+  ];
+
+  let fontIndex = parseInt(localStorage.getItem('sm_font_index') || '0', 10);
+  if (Number.isNaN(fontIndex)) fontIndex = 0;
+  fontIndex = ((fontIndex % FONTS.length) + FONTS.length) % FONTS.length;
+
+  let theme = localStorage.getItem('sm_theme') || 'dark';
+
+  const themeBtn = document.getElementById('btn-theme-toggle');
+  const fontBtn = document.getElementById('btn-font-cycle');
+  const fontChip = document.getElementById('font-chip-label');
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+
+  function applyTheme(next) {
+    theme = next === 'light' ? 'light' : 'dark';
+    localStorage.setItem('sm_theme', theme);
+    if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      if (themeMeta) themeMeta.content = '#eef2f9';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      if (themeMeta) themeMeta.content = '#1a1f3a';
+    }
+    if (themeBtn) {
+      const themeIcon = themeBtn.querySelector('.square-btn-icon');
+      if (themeIcon) themeIcon.textContent = theme === 'light' ? '☀️' : '🌙';
+      themeBtn.title = theme === 'light' ? 'التبديل إلى الوضع الليلي' : 'التبديل إلى الوضع النهاري';
+    }
+  }
+
+  function applyFont(index) {
+    fontIndex = ((index % FONTS.length) + FONTS.length) % FONTS.length;
+    localStorage.setItem('sm_font_index', String(fontIndex));
+    const f = FONTS[fontIndex];
+    document.documentElement.style.setProperty('--app-font', f.family);
+    document.body.style.fontFamily = f.family;
+    if (fontChip) {
+      fontChip.textContent = f.chip;
+      fontChip.style.fontFamily = f.family;
+    }
+    if (fontBtn) fontBtn.title = 'تبديل الخط — ' + f.label;
+  }
+
+  window.toggleTheme = function () {
+    applyTheme(theme === 'light' ? 'dark' : 'light');
+    showToast(theme === 'light' ? 'الوضع النهاري ☀️' : 'الوضع الليلي 🌙', 'success');
+  };
+
+  window.cycleFont = function () {
+    applyFont(fontIndex + 1);
+    showToast('الخط: ' + FONTS[fontIndex].label, 'success');
+  };
+
+  applyTheme(theme);
+  applyFont(fontIndex);
+
+  if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+  if (fontBtn) fontBtn.addEventListener('click', cycleFont);
+})();
+
+// ===== GLASS / TRANSPARENCY =====
+(function initGlassLevel() {
+  const GLASS_MAX = 4;
+  const glassBtn = document.getElementById('btn-glass-toggle');
+  const glassLabel = document.getElementById('glass-btn-label');
+  let glassLevel = parseInt(localStorage.getItem('sm_glass_level') || '0', 10);
+  if (Number.isNaN(glassLevel)) glassLevel = 0;
+
+  function applyGlassLevel(level, silent) {
+    glassLevel = Math.max(0, Math.min(GLASS_MAX, level));
+    localStorage.setItem('sm_glass_level', String(glassLevel));
+    document.body.setAttribute('data-glass', String(glassLevel));
+    if (glassBtn) {
+      glassBtn.classList.toggle('active', glassLevel > 0);
+      glassBtn.title = 'شفافية: ' + (glassLevel === 0 ? 'عادية' : 'مستوى ' + glassLevel + ' من ' + GLASS_MAX);
+    }
+    if (glassLabel) {
+      glassLabel.textContent = glassLevel === 0 ? 'شفاف' : glassLevel + '/' + GLASS_MAX;
+    }
+    if (!silent) {
+      const msg = glassLevel === 0
+        ? 'شفافية عادية للحاويات'
+        : 'شفافية الحاويات: مستوى ' + glassLevel;
+      showToast(msg, 'success');
+    }
+  }
+
+  window.cycleGlassLevel = function () {
+    applyGlassLevel((glassLevel + 1) % (GLASS_MAX + 1), false);
+  };
+
+  applyGlassLevel(glassLevel, true);
+  if (glassBtn) glassBtn.addEventListener('click', cycleGlassLevel);
+})();
+
+// ===== TRANSPARENT TEXTURES BACKGROUNDS =====
+(function initTransparentTextures() {
+  const TT_BASE = 'https://www.transparenttextures.com/patterns/';
+  const TT_PATTERN_SLUGS = '3px-tile|45-degree-fabric-dark|45-degree-fabric-light|60-lines|absurdity|ag-square|always-grey|arabesque|arches|argyle|asfalt-dark|asfalt-light|assault|axiom-pattern|az-subtle|back-pattern|basketball|batthern|bedge-grunge|beige-paper|billie-holiday|binding-dark|binding-light|black-felt|black-linen|black-linen-2|black-mamba|black-orchid|black-paper|black-scales|black-thread|black-thread-light|black-twill|blizzard|blu-stripes|bo-play|brick-wall|brick-wall-dark|bright-squares|brilliant|broken-noise|brushed-alum|brushed-alum-dark|buried|candyhole|carbon-fibre|carbon-fibre-big|carbon-fibre-v2|cardboard|cardboard-flat|cartographer|checkered-light-emboss|checkered-pattern|church|circles|classy-fabric|clean-gray-paper|clean-textile|climpek|cloth-alike|concrete-wall|concrete-wall-2|concrete-wall-3|connected|corrugation|cream-dust|cream-paper|cream-pixels|crisp-paper-ruffles|crissxcross|cross-scratches|cross-stripes|crossword|cubes|cutcube|dark-brick-wall|dark-circles|dark-denim|dark-denim-3|dark-dot|dark-dotted-2|dark-exa|dark-fish-skin|dark-geometric|dark-leather|dark-matter|dark-mosaic|dark-stripes|dark-stripes-light|dark-tire|dark-wall|dark-wood|darth-stripe|debut-dark|debut-light|diagmonds-light|diagonal-noise|diagonal-striped-brick|diagonal-waves|diagonales-decalees|diamond-eyes|diamond-upholstery|diamonds-are-forever|dimension|dirty-old-black-shirt|dotnoise-light-grey|double-lined|dust|ecailles|egg-shell|elastoplast|elegant-grid|embossed-paper|escheresque|escheresque-dark|exclusive-paper|fabric-plaid|fabric-1-dark|fabric-1-light|fabric-of-squares|fake-brick|fake-luxury|fancy-deboss|farmer|felt|first-aid-kit|flower-trail|flowers|foggy-birds|foodfrench-stucco|fresh-snow|gold-scale|gplay|gradient-squares|graphcoders-lil-fiber|graphy-dark|gravel|gray-floral|gray-lines|gray-sand|green-cup|green-dust-and-scratches|green-fibers|green-gobbler|grey-jean|grey-sandbag|grey-washed-wall|greyzz|grid|grid-me|grid-noise|grilled-noise|groovepaper|grunge-wall|gun-metal|handmade-paper|hexabump|hexellence|hixs-evolution|hoffman|honey-im-subtle|ice-age|inflicted|inspiration-geometry|iron-grip|kinda-jean|knitted-netting|knitted-sweater|kuji|large-leather|leather|light-aluminum|light-gray|light-grey-floral-motif|light-honeycomb|light-honeycomb-dark|light-mesh|light-paper-fibers|light-sketch|light-toast|light-wool|lined-paper|lined-paper-2|little-knobs|little-pluses|little-triangles|low-contrast-linen|lyonnette|maze-black|maze-white|mbossed|medic-packaging-foil|merely-cubed|micro-carbon|mirrored-squares|mocha-grunge|mooning|moulin|my-little-plaid-dark|nami|nasty-fabric|natural-paper|navy|nice-snow|nistri|noise-lines|noise-pattern-with-subtle-cross-lines|noisy|noisy-grid|noisy-net|norwegian-rose|notebook|notebook-dark|office|old-husks|old-map|old-mathematics|old-moon|old-wall|otis-redding|outlets|p1|p2|p4|p5|p6|padded|padded-light|paper|paper-1|paper-2|paper-3|paper-fibers|paven|perforated-white-leather|pineapple-cut|pinstripe-dark|pinstripe-light|pinstriped-suit|pixel-weave|polaroid|polonez-pattern|polyester-lite|pool-table|project-paper|ps-neutral|psychedelic|purty-wood|pw-pattern|pyramid|quilt|random-grey-variations|ravenna|real-carbon-fibre|rebel|redox-01|redox-02|reticular-tissue|retina-dust|retina-wood|retro-intro|rice-paper|rice-paper-2|rice-paper-3|robots|rocky-wall|rough-cloth|rough-cloth-light|rough-diagonal|rubber-grip|sandpaper|satin-weave|scribble-light|shattered|shattered-dark|shine-caro|shine-dotted|shley-tree-1|shley-tree-2|silver-scales|simple-dashed|simple-horizontal-light|skeletal-weave|skewed-print|skin-side-up|skulls|slash-it|small-crackle-bright|small-crosses|smooth-wall-dark|smooth-wall-light|sneaker-mesh-fabric|snow|soft-circle-scales|soft-kill|soft-pad|soft-wallpaper|solid|sos|sprinkles|squairy|squared-metal|squares|stacked-circles|stardust|starring|stitched-wool|strange-bullseyes|straws|stressed-linen|stucco|subtle-carbon|subtle-dark-vertical|subtle-dots|subtle-freckles|subtle-grey|subtle-grunge|subtle-stripes|subtle-surface|subtle-white-feathers|subtle-zebra-3d|subtlenet|swirl|tactile-noise-dark|tactile-noise-light|tapestry|tasky|tex2res1|tex2res2|tex2res3|tex2res4|tex2res5|textured-paper|textured-stripes|texturetastic-gray|ticks|tileable-wood|tileable-wood-colored|tiny-grid|translucent-fibres|transparent-square-tiles|tree-bark|triangles|triangles-2|triangular|tweed|twinkle-twinkle|txture|type|use-your-illusion|vaio|vertical-cloth|vichy|vintage-speckles|wall-4-light|washi|wave-grid|wavecut|weave|wet-snow|white-bed-sheet|white-brick-wall|white-brushed|white-carbon|white-carbonfiber|white-diamond|white-diamond-dark|white-leather|white-linen|white-paperboard|white-plaster|white-sand|white-texture|white-tiles|white-wall|white-wall-3|white-wall-3-2|white-wave|whitey|wide-rectangles|wild-flowers|wild-oliva|wine-cork|wood|wood-pattern|worn-dots|woven|woven-light|xv|zig-zag|black-lozenge'.split('|');
+
+  const bgBtn = document.getElementById('btn-bg-pattern');
+  let texRetries = 0;
+
+  function isLightTheme() {
+    return document.documentElement.hasAttribute('data-theme');
+  }
+
+  function randomTexColor() {
+    const h = Math.floor(Math.random() * 360);
+    if (isLightTheme()) {
+      const s = 22 + Math.floor(Math.random() * 28);
+      const l = 86 + Math.floor(Math.random() * 10);
+      return 'hsl(' + h + ', ' + s + '%, ' + l + '%)';
+    }
+    const s = 16 + Math.floor(Math.random() * 22);
+    const l = 10 + Math.floor(Math.random() * 14);
+    return 'hsl(' + h + ', ' + s + '%, ' + l + '%)';
+  }
+
+  function slugToLabel(slug) {
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function syncBgBtn() {
+    if (!bgBtn) return;
+    bgBtn.classList.toggle('active', document.body.getAttribute('data-tex-bg') === 'on');
+  }
+
+  function applyTexBg(slug, color, silent) {
+    const url = TT_BASE + slug + '.png';
+    document.documentElement.style.setProperty('--tt-pattern', 'url("' + url + '")');
+    document.documentElement.style.setProperty('--tt-bg', color);
+    document.body.setAttribute('data-tex-bg', 'on');
+    localStorage.setItem('sm_tex_slug', slug);
+    localStorage.setItem('sm_tex_color', color);
+    syncBgBtn();
+    if (!silent) showToast('خلفية: ' + slugToLabel(slug), 'success');
+  }
+
+  function clearTexBg(silent) {
+    document.body.removeAttribute('data-tex-bg');
+    document.documentElement.style.removeProperty('--tt-pattern');
+    document.documentElement.style.removeProperty('--tt-bg');
+    localStorage.removeItem('sm_tex_slug');
+    localStorage.removeItem('sm_tex_color');
+    syncBgBtn();
+    if (!silent) showToast('تم إلغاء خلفية النمط', 'success');
+  }
+
+  function pickRandomSlug() {
+    return TT_PATTERN_SLUGS[Math.floor(Math.random() * TT_PATTERN_SLUGS.length)];
+  }
+
+  function applyRandomTexBg() {
+    const slug = pickRandomSlug();
+    const url = TT_BASE + slug + '.png';
+    const color = randomTexColor();
+    const img = new Image();
+    img.onload = function () {
+      texRetries = 0;
+      applyTexBg(slug, color, false);
+    };
+    img.onerror = function () {
+      if (texRetries < 4) {
+        texRetries++;
+        applyRandomTexBg();
+      } else {
+        texRetries = 0;
+        showToast('تعذّر تحميل النمط، حاول مرة أخرى', 'error');
+      }
+    };
+    img.src = url;
+  }
+
+  window.refreshTexBgForTheme = function () {
+    if (document.body.getAttribute('data-tex-bg') !== 'on') return;
+    const slug = localStorage.getItem('sm_tex_slug');
+    if (!slug) return;
+    applyTexBg(slug, randomTexColor(), true);
+  };
+
+  if (bgBtn) {
+    bgBtn.addEventListener('click', function () {
+      applyRandomTexBg();
+    });
+    bgBtn.addEventListener('dblclick', function (e) {
+      e.preventDefault();
+      if (document.body.getAttribute('data-tex-bg') === 'on') clearTexBg(false);
+    });
+  }
+
+  syncBgBtn();
+
+  const origToggleTheme = window.toggleTheme;
+  if (typeof origToggleTheme === 'function') {
+    window.toggleTheme = function () {
+      origToggleTheme();
+      window.refreshTexBgForTheme();
+    };
+  }
+})();
+
+// ===== PWA INSTALL =====
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-bar').style.display = 'block';
+  document.getElementById('install-btn').onclick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const result = await deferredPrompt.userChoice;
+      if (result.outcome === 'accepted') {
+        document.getElementById('install-bar').style.display = 'none';
+        showToast('تم تثبيت التطبيق بنجاح!', 'success');
+      }
+      deferredPrompt = null;
+    }
+  };
+});
+
+// Keyboard shortcut Escape = close modals
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAllModals();
+  if (e.key === 'Enter' && document.getElementById('login-overlay').style.display === 'flex') doLogin();
+  if (e.key === 'Enter' && document.getElementById('adjust-overlay').style.display === 'flex') applySalaryAdjust();
+});
+</script>
+</body>
+</html>
