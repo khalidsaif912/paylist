@@ -12,6 +12,7 @@
 <style>
 :root {
   color-scheme: dark;
+  --ui-scale: 1;
   --bg: #0f1729;
   --surface: #1a2340;
   --surface2: #212d4a;
@@ -433,13 +434,11 @@ body[data-tex-bg="on"][data-tex-tone="light"]::before {
 }
 
 .appearance-dock .appearance-quick {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: stretch;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   width: auto;
+  min-width: min(100%, 220px);
 }
 
 .appearance-dock .square-btn--dock {
@@ -697,9 +696,57 @@ body[data-tex-bg="on"][data-tex-tone="light"]::before {
 .salary-hero-grid {
   display: grid;
   grid-template-columns: 1fr 1.2fr 1fr;
+  grid-template-areas: "area-spent area-mid area-end";
   align-items: stretch;
   gap: 8px;
   width: 100%;
+}
+
+.hero-stat-spent { grid-area: area-spent; }
+.salary-hero-center { grid-area: area-mid; }
+.hero-stat-remaining { grid-area: area-end; }
+
+.salary-hero-grid.metrics-swapped .salary-hero-center {
+  grid-area: area-end;
+}
+
+.salary-hero-grid.metrics-swapped .hero-stat-remaining {
+  grid-area: area-mid;
+}
+
+/* عند التبديل: الراتب بجانب (حجم صغير) والباقي في الوسط (حجم كبير) */
+.salary-hero-grid.metrics-swapped .salary-hero-center .salary-value {
+  font-size: clamp(0.82rem, 3.4vw, 1rem);
+}
+
+.salary-hero-grid.metrics-swapped .salary-hero-center .salary-hero-currency {
+  display: none;
+}
+
+.salary-hero-grid.metrics-swapped .salary-hero-center .salary-hero-label {
+  font-size: 0.5rem;
+  margin-bottom: 4px;
+}
+
+.salary-hero-grid.metrics-swapped .hero-stat-remaining .hero-stat-value {
+  font-size: clamp(1.1rem, 4.8vw, 1.55rem);
+}
+
+.salary-hero-grid.metrics-swapped .hero-stat-remaining .hero-stat-label {
+  font-size: 0.6rem;
+  margin-bottom: 5px;
+}
+
+.salary-hero-center.hero-swap-trigger,
+.hero-stat-remaining.hero-swap-trigger {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.salary-hero-center.hero-swap-trigger:active,
+.hero-stat-remaining.hero-swap-trigger:active {
+  transform: scale(0.98);
 }
 
 .hero-stat,
@@ -1392,12 +1439,13 @@ body[data-glass]:not([data-glass="0"]) .salary-banner-actions {
 .type-badge {
   display: inline-flex;
   align-items: center;
-  padding: 1px 5px;
+  padding: 2px 7px;
   border-radius: 999px;
-  font-size: 0.52rem;
+  font-size: 0.58rem;
   font-weight: 800;
-  line-height: 1.5;
+  line-height: 1.35;
   border: 1px solid transparent;
+  letter-spacing: 0.02em;
 }
 
 .repeat-badge {
@@ -1562,17 +1610,30 @@ body[data-glass]:not([data-glass="0"]) .salary-banner-actions {
 
 /* TYPE COLORS */
 .type-فواتير,
-.type-الفواتير { background: rgba(255,77,109,0.14); color: #ff8fa3; border-color: rgba(255,77,109,0.22); }
-.type-القروض { background: rgba(255,77,109,0.18); color: #ff6b8a; border-color: rgba(255,77,109,0.25); }
-.type-الديون { background: rgba(255,150,50,0.14); color: #ffb366; border-color: rgba(255,150,50,0.22); }
-.type-الايجارات { background: rgba(255,200,50,0.14); color: #ffd166; border-color: rgba(255,200,50,0.22); }
-.type-الاساسيات { background: rgba(79,142,247,0.14); color: #7eb0ff; border-color: rgba(79,142,247,0.22); }
-.type-الكماليات { background: rgba(150,100,255,0.14); color: #c4a0ff; border-color: rgba(150,100,255,0.22); }
-.type-الصيانة { background: rgba(0,200,150,0.14); color: #3ddfa8; border-color: rgba(0,200,150,0.22); }
-.type-الصدقات { background: rgba(0,229,195,0.12); color: #5ef0d6; border-color: rgba(0,229,195,0.22); }
-.type-المدخرات { background: rgba(100,200,100,0.14); color: #7ee081; border-color: rgba(100,200,100,0.22); }
-.type-اخرى { background: rgba(255,255,255,0.06); color: var(--text-muted); border-color: var(--border); }
-.type-إيداع { background: rgba(0,200,150,0.14); color: #5ef0d6; border-color: rgba(0,200,150,0.28); }
+.type-الفواتير { background: rgba(140, 30, 55, 0.45); color: #ffc4d0; border-color: rgba(255, 120, 150, 0.35); }
+.type-القروض { background: rgba(130, 28, 50, 0.5); color: #ffb8ca; border-color: rgba(255, 100, 130, 0.38); }
+.type-الديون { background: rgba(120, 65, 10, 0.45); color: #ffd9a8; border-color: rgba(255, 180, 80, 0.35); }
+.type-الايجارات { background: rgba(110, 80, 10, 0.45); color: #ffe9a8; border-color: rgba(255, 210, 90, 0.35); }
+.type-الاساسيات { background: rgba(30, 70, 140, 0.5); color: #d4e6ff; border-color: rgba(120, 170, 255, 0.38); }
+.type-الكماليات { background: rgba(70, 45, 130, 0.5); color: #e4d4ff; border-color: rgba(180, 140, 255, 0.38); }
+.type-الصيانة { background: rgba(15, 90, 70, 0.5); color: #b8f5e4; border-color: rgba(61, 223, 168, 0.38); }
+.type-الصدقات { background: rgba(10, 95, 85, 0.48); color: #b8fff5; border-color: rgba(61, 223, 200, 0.35); }
+.type-المدخرات { background: rgba(25, 95, 45, 0.5); color: #c8f5d0; border-color: rgba(100, 220, 140, 0.38); }
+.type-اخرى { background: rgba(255, 255, 255, 0.1); color: #d0dae8; border-color: rgba(255, 255, 255, 0.18); }
+.type-إيداع { background: rgba(12, 100, 75, 0.5); color: #b8fff0; border-color: rgba(61, 223, 168, 0.4); }
+
+[data-theme="light"] .type-فواتير,
+[data-theme="light"] .type-الفواتير { background: rgba(190, 45, 70, 0.14); color: #8f1535; border-color: rgba(190, 45, 70, 0.28); }
+[data-theme="light"] .type-القروض { background: rgba(185, 40, 65, 0.16); color: #861228; border-color: rgba(185, 40, 65, 0.32); }
+[data-theme="light"] .type-الديون { background: rgba(170, 85, 15, 0.14); color: #7a4208; border-color: rgba(170, 85, 15, 0.28); }
+[data-theme="light"] .type-الايجارات { background: rgba(155, 105, 10, 0.14); color: #6b4806; border-color: rgba(155, 105, 10, 0.28); }
+[data-theme="light"] .type-الاساسيات { background: rgba(45, 95, 185, 0.14); color: #163d7a; border-color: rgba(45, 95, 185, 0.3); }
+[data-theme="light"] .type-الكماليات { background: rgba(95, 58, 175, 0.14); color: #452878; border-color: rgba(95, 58, 175, 0.3); }
+[data-theme="light"] .type-الصيانة { background: rgba(18, 115, 85, 0.14); color: #0a5c44; border-color: rgba(18, 115, 85, 0.3); }
+[data-theme="light"] .type-الصدقات { background: rgba(10, 125, 105, 0.14); color: #0a5548; border-color: rgba(10, 125, 105, 0.3); }
+[data-theme="light"] .type-المدخرات { background: rgba(28, 115, 55, 0.15); color: #145a2e; border-color: rgba(28, 115, 55, 0.32); }
+[data-theme="light"] .type-اخرى { background: rgba(60, 75, 95, 0.1); color: #3d5270; border-color: rgba(60, 75, 95, 0.22); }
+[data-theme="light"] .type-إيداع { background: rgba(12, 120, 90, 0.14); color: #0a5e48; border-color: rgba(12, 120, 90, 0.32); }
 
 .expense-amount--deposit {
   color: var(--success) !important;
@@ -1603,6 +1664,7 @@ button, .square-btn, .btn, .btn-icon, .salary-month-btn, .btn-add-month-main {
   }
   .appearance-dock .appearance-quick {
     gap: 6px;
+    min-width: min(100%, 200px);
   }
   .appearance-dock .square-btn--dock {
     width: 40px;
@@ -1724,7 +1786,10 @@ button, .square-btn, .btn, .btn-icon, .salary-month-btn, .btn-add-month-main {
   }
 
   .type-badge,
-  .repeat-badge,
+  .repeat-badge {
+    font-size: 0.54rem;
+    padding: 2px 6px;
+  }
   .expense-date {
     font-size: 0.48rem;
   }
@@ -1986,6 +2051,9 @@ button, .square-btn, .btn, .btn-icon, .salary-month-btn, .btn-add-month-main {
 #btn-bg-pattern .square-btn-icon { color: #00c896; }
 #btn-bg-pattern.active { outline-color: var(--accent); }
 
+#btn-ui-zoom .square-btn-icon { color: #4f8ef7; font-size: 0.95rem; font-weight: 800; }
+#btn-ui-zoom.active { outline-color: var(--primary); }
+
 .square-btn.add-btn .square-btn-icon { color: #ff5c7a; font-size: 1.2rem; font-weight: 300; }
 .square-btn.add-btn.is-open .square-btn-icon { font-weight: 400; }
 .square-btn.deposit-btn .square-btn-icon { color: #e8a000; }
@@ -2161,6 +2229,12 @@ button, .square-btn, .btn, .btn-icon, .salary-month-btn, .btn-add-month-main {
     }
     var glass = ls.getItem('sm_glass_level');
     if (glass) document.body.setAttribute('data-glass', glass);
+    var zoomLv = parseInt(ls.getItem('sm_ui_zoom') || '0', 10);
+    var zoomScales = [1, 1.1, 1.25, 1.4];
+    if (!Number.isNaN(zoomLv) && zoomLv > 0 && zoomLv < zoomScales.length) {
+      document.documentElement.setAttribute('data-ui-zoom', String(zoomLv));
+      document.documentElement.style.setProperty('--ui-scale', String(zoomScales[zoomLv]));
+    }
   } catch (e) {}
 })();
 </script>
@@ -2209,6 +2283,10 @@ button, .square-btn, .btn, .btn-icon, .salary-month-btn, .btn-add-month-main {
         <span class="square-btn-label" id="glass-btn-label">شفاف</span>
         <span class="square-btn-icon" id="glass-btn-icon">◐</span>
       </button>
+      <button type="button" class="square-btn square-btn--dock" id="btn-ui-zoom" title="تكبير الواجهة" aria-label="تكبير الواجهة">
+        <span class="square-btn-label" id="zoom-btn-label">تكبير</span>
+        <span class="square-btn-icon" id="zoom-btn-icon">🔍</span>
+      </button>
     </div>
   </div>
 </div>
@@ -2236,17 +2314,19 @@ button, .square-btn, .btn, .btn-icon, .salary-month-btn, .btn-add-month-main {
     </div>
 
     <div class="salary-hero">
-      <div class="salary-hero-grid">
+      <div class="salary-hero-grid" id="salary-hero-grid">
         <div class="hero-stat hero-stat-spent">
           <div class="hero-stat-label">📤 المصروف</div>
           <div class="hero-stat-value red" id="stat-spent">0</div>
         </div>
-        <div class="salary-hero-center">
+        <div class="salary-hero-center hero-swap-trigger" id="hero-salary-slot"
+          role="button" tabindex="0" title="اضغط لتبديل عرض الراتب والباقي" aria-label="تبديل عرض الراتب والباقي">
           <div class="salary-hero-label">💰 إجمالي الراتب</div>
           <div class="salary-value" id="total-salary">0</div>
           <div class="salary-hero-currency">ر.ع · OMANI RIAL</div>
         </div>
-        <div class="hero-stat hero-stat-remaining">
+        <div class="hero-stat hero-stat-remaining hero-swap-trigger" id="hero-remaining-slot"
+          role="button" tabindex="0" title="اضغط لتبديل عرض الراتب والباقي" aria-label="تبديل عرض الراتب والباقي">
           <div class="hero-stat-label">🐖 الباقي</div>
           <div class="hero-stat-value green" id="stat-remaining">0</div>
         </div>
@@ -3668,6 +3748,42 @@ function renderTable() {
   }).join('');
 }
 
+// ===== تبديل عرض الراتب / الباقي =====
+function toggleSalaryRemainingSwap(ev) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  const grid = document.getElementById('salary-hero-grid');
+  if (!grid) return;
+  const swapped = grid.classList.toggle('metrics-swapped');
+  localStorage.setItem('sm_metrics_swapped', swapped ? '1' : '0');
+}
+
+(function initSalaryRemainingSwap() {
+  const grid = document.getElementById('salary-hero-grid');
+  const salarySlot = document.getElementById('hero-salary-slot');
+  const remainingSlot = document.getElementById('hero-remaining-slot');
+  if (!grid || !salarySlot || !remainingSlot) return;
+
+  if (localStorage.getItem('sm_metrics_swapped') === '1') {
+    grid.classList.add('metrics-swapped');
+  }
+
+  function onSwapActivate(e) {
+    toggleSalaryRemainingSwap(e);
+  }
+
+  salarySlot.addEventListener('click', onSwapActivate);
+  remainingSlot.addEventListener('click', onSwapActivate);
+  salarySlot.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') onSwapActivate(e);
+  });
+  remainingSlot.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') onSwapActivate(e);
+  });
+})();
+
 // ===== STATS =====
 function updateStats() {
   const salary = currentUser ? (currentUser.salary || 0) : 0;
@@ -4008,6 +4124,44 @@ function showToast(msg, type = 'success') {
 
   applyGlassLevel(glassLevel, true);
   if (glassBtn) glassBtn.addEventListener('click', cycleGlassLevel);
+})();
+
+// ===== UI ZOOM (تكبير — للجوال) =====
+(function initUiZoom() {
+  const ZOOM_MAX = 3;
+  const SCALES = [1, 1.1, 1.25, 1.4];
+  let zoomLevel = parseInt(localStorage.getItem('sm_ui_zoom') || '0', 10);
+  if (Number.isNaN(zoomLevel)) zoomLevel = 0;
+
+  function applyUiZoom(level, silent) {
+    zoomLevel = Math.max(0, Math.min(ZOOM_MAX, level));
+    const scale = SCALES[zoomLevel];
+    localStorage.setItem('sm_ui_zoom', String(zoomLevel));
+    document.documentElement.setAttribute('data-ui-zoom', String(zoomLevel));
+    document.documentElement.style.setProperty('--ui-scale', String(scale));
+    document.body.style.zoom = scale === 1 ? '' : String(scale);
+    const icon = document.getElementById('zoom-btn-icon');
+    const label = document.getElementById('zoom-btn-label');
+    const btn = document.getElementById('btn-ui-zoom');
+    const pct = Math.round(scale * 100);
+    if (icon) icon.textContent = zoomLevel === 0 ? '🔍' : String(pct);
+    if (label) label.textContent = zoomLevel === 0 ? 'تكبير' : pct + '%';
+    if (btn) {
+      btn.classList.toggle('active', zoomLevel > 0);
+      btn.title = zoomLevel === 0 ? 'تكبير الواجهة' : 'تكبير الواجهة: ' + pct + '%';
+    }
+    if (!silent) {
+      showToast(zoomLevel === 0 ? 'حجم الواجهة: عادي' : 'تكبير الواجهة: ' + pct + '%', 'success');
+    }
+  }
+
+  window.cycleUiZoom = function () {
+    applyUiZoom((zoomLevel + 1) % (ZOOM_MAX + 1), false);
+  };
+
+  applyUiZoom(zoomLevel, true);
+  const zoomBtn = document.getElementById('btn-ui-zoom');
+  if (zoomBtn) zoomBtn.addEventListener('click', cycleUiZoom);
 })();
 
 // ===== TRANSPARENT TEXTURES BACKGROUNDS =====
